@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF="8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeMatch</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="uploadScreen" class="screen active">
+        <h1>VibeMatch</h1>
+        <p>Upload a photo to find its perfect music vibe!</p>
+        <input type="file" id="photoUpload" accept="image/*">
+        <button id="analyzeVibeBtn">Analyze Vibe</button>
+    </div>
+
+    <div id="recommendationScreen" class="screen">
+        <h1>Your VibeMatch Playlist</h1>
+        <div id="musicRecommendations">
+            <p>Loading music...</p>
+        </div>
+        <button id="backToUploadBtn">Upload Another Photo</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
