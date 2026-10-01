@@ -26,8 +26,11 @@ The app is ready for Vercel's free Hobby plan as is. No settings to change, no
 build step, no environment variables.
 
 **Option A, from GitHub (easiest):**
-1. Sign in at [vercel.com](https://vercel.com) with your GitHub account.
-2. Click **Add New → Project**, pick `vibe-match-prototype`, and press **Deploy**.
+1. Open the [RxServicesSolutions team's new-project page](https://vercel.com/new?teamSlug=rx-services-solutions).
+2. Under **Import Git Repository**, pick `vibe-match-prototype`. If it isn't
+   listed, click **Adjust GitHub App Permissions** and give Vercel access to
+   that repository first.
+3. Press **Deploy**.
 3. You get a public link like `https://vibe-match-prototype.vercel.app`. Every
    push to `main` redeploys it automatically.
 
