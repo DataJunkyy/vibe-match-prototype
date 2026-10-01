@@ -4,7 +4,7 @@ Describe how you feel in your own words, and Vibe Match plays a song that fits.
 
 ## Try it
 
-It's a plain web page with no build step and no API keys.
+Locally it's a plain web page with no build step and no API keys.
 
 ```bash
 npm start            # serves the folder at http://localhost:8000
@@ -19,6 +19,31 @@ npm start            # serves the folder at http://localhost:8000
    in your browser for next time.
 3. Press **Match my vibe**. A song starts playing.
 4. **Another song for this vibe** plays a different one without repeating.
+
+## Put it online (Vercel, free)
+
+The app is ready for Vercel's free Hobby plan as is. No settings to change, no
+build step, no environment variables.
+
+**Option A, from GitHub (easiest):**
+1. Sign in at [vercel.com](https://vercel.com) with your GitHub account.
+2. Click **Add New → Project**, pick `vibe-match-prototype`, and press **Deploy**.
+3. You get a public link like `https://vibe-match-prototype.vercel.app`. Every
+   push to `main` redeploys it automatically.
+
+**Option B, from your computer:**
+```bash
+npx vercel          # first run asks you to log in, then gives a preview link
+npx vercel --prod   # publish to the main link
+```
+For a scripted deploy, create a token at vercel.com/account/tokens and put it
+in a `VERCEL_TOKEN` environment variable (`npx vercel --prod --token "$VERCEL_TOKEN"`).
+Never commit the token or paste it anywhere public.
+
+When hosted, the page asks its own server functions (`api/itunes.js`,
+`api/audius.js`) to look songs up, so lookups don't depend on the browser being
+allowed to call Apple or Audius directly, and repeat searches are cached by
+Vercel. The audio itself still streams straight from the free services.
 
 ## How it works
 

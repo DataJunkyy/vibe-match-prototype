@@ -13,15 +13,38 @@ const ITUNES = 'https://itunes.apple.com/search';
 const AUDIUS = 'https://api.audius.co/v1';
 const APP_NAME = 'VibeMatchPrototype';
 
-// iTunes allows cross-origin requests, but fall back to JSONP if a browser
-// or network blocks the fetch.
+// When hosted (e.g. on Vercel) the page asks its own /api functions, which
+// fetch from the music services server-side. When served as plain static
+// files there is no /api, so it talks to the services directly instead.
+let useApi = true;
+
+async function viaApi(path, params) {
+  if (!useApi) return null;
+  try {
+    const res = await fetch(`${path}?${params}`);
+    if (res.status === 404 || !(res.headers.get('content-type') || '').includes('json')) {
+      useApi = false;
+      return null;
+    }
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function itunesSearch(params) {
-  const query = new URLSearchParams({ media: 'music', entity: 'song', limit: '15', ...params });
+  const query = new URLSearchParams({ limit: '15', ...params });
+  const proxied = await viaApi('/api/itunes', query);
+  if (proxied) return proxied.results || [];
+
+  query.set('media', 'music');
+  query.set('entity', 'song');
   try {
     const res = await fetch(`${ITUNES}?${query}`);
     if (!res.ok) throw new Error(`iTunes ${res.status}`);
     return (await res.json()).results || [];
   } catch (err) {
+    // Last resort if a browser or network blocks the cross-origin fetch.
     return itunesJsonp(query);
   }
 }
@@ -84,9 +107,13 @@ async function keywordSearch(mood, genre) {
 // which is usually past the intro and into the main section.
 async function audiusSearch(mood) {
   const word = shuffle(MOODS[mood].searchWords)[0];
-  const res = await fetch(`${AUDIUS}/tracks/search?query=${encodeURIComponent(word)}&app_name=${APP_NAME}`);
-  if (!res.ok) return null;
-  const tracks = ((await res.json()).data || []).filter((t) => t.is_streamable !== false);
+  let data = await viaApi('/api/audius', new URLSearchParams({ query: word }));
+  if (!data) {
+    const res = await fetch(`${AUDIUS}/tracks/search?query=${encodeURIComponent(word)}&app_name=${APP_NAME}`);
+    if (!res.ok) return null;
+    data = await res.json();
+  }
+  const tracks = (data.data || []).filter((t) => t.is_streamable !== false);
   if (!tracks.length) return null;
   const t = shuffle(tracks)[0];
   return {
