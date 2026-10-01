@@ -14,7 +14,13 @@ npm start            # serves the folder at http://localhost:8000
 `index.html` straight from disk won't work because browsers block ES modules on
 `file://`.)
 
-1. Type how you feel, e.g. *"Long week, I'm drained but kind of proud of myself"*.
+1. Say how you feel any of three ways:
+   - **Type it**, e.g. *"Long week, I'm drained but kind of proud of myself"*.
+   - **Say it**: tap 🎤 and talk. The browser's built-in speech recognition
+     (Chrome, Edge, Safari) turns it into text and matches it right away.
+   - **Show it**: add a photo (a selfie, the view, anything). Its colours and
+     light are read in the browser; the photo is never uploaded. You can add a
+     photo and words together; clear words win over the photo.
 2. Optionally tap the genres you like (Country, Reggae, ...). They're remembered
    in your browser for next time.
 3. Press **Match my vibe**. A song starts playing.
@@ -54,6 +60,10 @@ Vercel. The audio itself still streams straight from the free services.
   (happy, sad, calm, energetic, angry, in love, nostalgic, hopeful, anxious).
   It handles simple negation ("not happy" leans sad) and intensifiers ("so
   happy"). For anxious moods it picks soothing songs rather than tense ones.
+- **Photo → mood** (`image.js`): the photo is shrunk to 64px and summarised
+  as brightness, colourfulness, contrast and warm/cool/green balance, e.g.
+  dark and muted reads as sad, bright warm colours as happy, vivid and
+  high-contrast as energetic, sepia tones as nostalgic.
 - **Mood → song** (`music.js`):
   1. A hand-picked list of songs per mood and genre, old and new, filtered to
      your preferred genres first.

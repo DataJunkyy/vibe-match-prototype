@@ -9,12 +9,27 @@
 <body>
   <main class="card">
     <h1>Vibe Match</h1>
-    <p class="lead">Tell me how you feel, in your own words. I'll play a song that matches.</p>
+    <p class="lead">Tell me how you feel, in your own words. Type it, say it with the 🎤, or add a photo. I'll play a song that matches.</p>
 
     <form id="vibeForm">
       <label for="feeling" class="visually-hidden">How are you feeling?</label>
-      <textarea id="feeling" rows="3" required
-        placeholder="e.g. Long week, I'm drained but kind of proud of myself"></textarea>
+      <div class="input-wrap">
+        <textarea id="feeling" rows="3"
+          placeholder="e.g. Long week, I'm drained but kind of proud of myself"></textarea>
+        <button type="button" id="micBtn" class="mic" hidden aria-pressed="false"
+          aria-label="Say how you feel" title="Say how you feel">🎤</button>
+      </div>
+      <p id="micHint" class="hint mic-hint" hidden></p>
+
+      <div class="photo-row">
+        <label class="photo-btn" for="photoInput">📷 Add a photo</label>
+        <input type="file" id="photoInput" accept="image/*" class="visually-hidden">
+        <span class="hint">a selfie, your view, anything that shows the vibe</span>
+      </div>
+      <div id="photoPreview" class="photo-preview" hidden>
+        <img id="photoThumb" alt="Your photo">
+        <button type="button" id="photoRemove" class="link-btn">Remove photo</button>
+      </div>
 
       <fieldset class="genres">
         <legend>Music you like <span class="hint">(optional, remembered for next time)</span></legend>
