@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vibe Match</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Vibe Match</h1>
+    <p class="lead">Tell me how you feel, in your own words. I'll play a song that matches.</p>
+
+    <form id="vibeForm">
+      <label for="feeling" class="visually-hidden">How are you feeling?</label>
+      <textarea id="feeling" rows="3" required
+        placeholder="e.g. Long week, I'm drained but kind of proud of myself"></textarea>
+
+      <fieldset class="genres">
+        <legend>Music you like <span class="hint">(optional, remembered for next time)</span></legend>
+        <div id="genreChips" class="chips"></div>
+      </fieldset>
+
+      <button type="submit" id="matchBtn">Match my vibe</button>
+    </form>
+
+    <section id="result" class="result" hidden aria-live="polite">
+      <p id="moodLine" class="mood-line"></p>
+      <div id="songCard" class="song" hidden>
+        <img id="artwork" alt="">
+        <div class="song-info">
+          <h2 id="songTitle"></h2>
+          <p id="songArtist"></p>
+          <p id="songSource" class="source"></p>
+        </div>
+      </div>
+      <audio id="player" controls hidden></audio>
+      <p id="subscribeLine" class="subscribe" hidden>
+        Have a subscription? Play the full song in
+        <span id="subscribeLinks"></span>
+      </p>
+      <p id="status" class="status"></p>
+      <button type="button" id="anotherBtn" class="secondary" hidden>Another song for this vibe</button>
+    </section>
+  </main>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
