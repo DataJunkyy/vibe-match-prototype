@@ -1,0 +1,142 @@
+:root {
+  --bg: #f3f1fa;
+  --card: #ffffff;
+  --text: #24212f;
+  --muted: #6b6680;
+  --accent: #6c4cf0;
+  --accent-hover: #5a3bd9;
+  --chip: #eeeaff;
+  --border: #e2ddf2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15131c;
+    --card: #211e2b;
+    --text: #f1eff7;
+    --muted: #a9a3bf;
+    --accent: #8f74ff;
+    --accent-hover: #a28cff;
+    --chip: #2e2940;
+    --border: #3a3450;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--card);
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+}
+
+h1 { margin: 0 0 6px; color: var(--accent); font-size: 1.9rem; }
+.lead { margin: 0 0 20px; color: var(--muted); line-height: 1.5; }
+
+textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  background: transparent;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  resize: vertical;
+}
+textarea:focus { outline: 2px solid var(--accent); border-color: transparent; }
+
+.genres { border: 0; padding: 0; margin: 18px 0; }
+.genres legend { font-weight: 600; margin-bottom: 8px; }
+.hint { font-weight: 400; color: var(--muted); font-size: 0.85rem; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--chip); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+#matchBtn, .secondary {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  background: var(--accent);
+  color: #fff;
+}
+#matchBtn:hover { background: var(--accent-hover); }
+#matchBtn:disabled { opacity: 0.6; cursor: wait; }
+.secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); margin-top: 12px; }
+
+.result { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; }
+.mood-line { font-size: 1.05rem; margin: 0 0 14px; }
+
+.song { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.song img { width: 88px; height: 88px; border-radius: 10px; object-fit: cover; background: var(--chip); flex-shrink: 0; }
+.song h2 { margin: 0 0 4px; font-size: 1.1rem; }
+.song p { margin: 0; color: var(--muted); }
+.song .source { font-size: 0.8rem; margin-top: 6px; }
+
+audio { width: 100%; margin: 4px 0 8px; }
+.subscribe { font-size: 0.9rem; color: var(--muted); margin: 6px 0; }
+.subscribe a { color: var(--accent); }
+.status { color: var(--muted); font-size: 0.9rem; min-height: 1em; margin: 6px 0 0; }
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+.input-wrap { position: relative; }
+.input-wrap textarea { padding-right: 56px; }
+.mic {
+  position: absolute; right: 8px; bottom: 10px;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: var(--card);
+  font-size: 1.15rem; line-height: 1;
+}
+.mic[aria-pressed="true"] {
+  background: var(--accent); border-color: var(--accent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(108, 76, 240, 0.45); }
+  50% { box-shadow: 0 0 0 8px rgba(108, 76, 240, 0); }
+}
+.mic-hint { margin: 6px 0 0; }
+
+.photo-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.photo-btn {
+  border: 1.5px solid var(--border); border-radius: 999px; padding: 6px 14px;
+  cursor: pointer; font-size: 0.95rem;
+}
+.photo-btn:hover, #photoInput:focus-visible + .photo-btn { border-color: var(--accent); }
+.photo-preview { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.photo-preview img { width: 72px; height: 72px; object-fit: cover; border-radius: 10px; }
+.link-btn { background: none; border: 0; color: var(--accent); text-decoration: underline; padding: 0; }

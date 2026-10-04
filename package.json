@@ -1,0 +1,9 @@
+{
+  "name": "vibe-match-prototype",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx --yes http-server -p 8000 -c-1 .",
+    "test": "node --test test/*.test.js"
+  }
+}
