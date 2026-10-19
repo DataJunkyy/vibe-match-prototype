@@ -59,11 +59,12 @@ function describeMood({ mood, matched, confident, photo }) {
 
 async function playSong(mood) {
   $('matchBtn').disabled = true;
-  $('anotherBtn').hidden = true;
+  $('anotherBtn').disabled = true;
   setStatus('Finding a song…');
 
   const song = await findSong(mood, selectedGenres, played);
   $('matchBtn').disabled = false;
+  $('anotherBtn').disabled = false;
 
   if (!song) {
     setStatus('I couldn’t reach the free music sources just now. Check your connection and try again.');

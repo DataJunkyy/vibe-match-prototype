@@ -84,7 +84,7 @@ button {
   font: inherit;
   cursor: pointer;
 }
-#matchBtn, .secondary {
+#matchBtn {
   width: 100%;
   padding: 12px;
   border-radius: 10px;
@@ -96,7 +96,6 @@ button {
 }
 #matchBtn:hover { background: var(--accent-hover); }
 #matchBtn:disabled { opacity: 0.6; cursor: wait; }
-.secondary { background: transparent; color: var(--accent); border: 1.5px solid var(--accent); margin-top: 12px; }
 
 .result { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 20px; }
 .mood-line { font-size: 1.05rem; margin: 0 0 14px; }
@@ -108,6 +107,22 @@ button {
 .song .source { font-size: 0.8rem; margin-top: 6px; }
 
 audio { width: 100%; margin: 4px 0 8px; }
+.player-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
+.player-row audio { flex: 1 1 220px; min-width: 0; margin: 0; }
+.another {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.another:hover { background: var(--accent-hover); }
+.another:disabled { opacity: 0.6; cursor: wait; }
 .subscribe { font-size: 0.9rem; color: var(--muted); margin: 6px 0; }
 .subscribe a { color: var(--accent); }
 .status { color: var(--muted); font-size: 0.9rem; min-height: 1em; margin: 6px 0 0; }
