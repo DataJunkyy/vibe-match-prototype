@@ -1,3 +1,6 @@
+/* Keep the hidden attribute working on elements that set their own display. */
+[hidden] { display: none !important; }
+
 :root {
   --bg: #f3f1fa;
   --card: #ffffff;
