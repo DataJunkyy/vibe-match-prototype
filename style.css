@@ -262,3 +262,6 @@ audio { width: 100%; margin: 4px 0 8px; }
 .kit-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 8px; }
 .kit-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .kit-note { margin: 8px 0 0; }
+
+.pro-manage { margin: 10px 0 0; font-size: 0.85rem; }
+.pro-manage a { color: var(--muted); }
