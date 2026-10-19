@@ -42,6 +42,16 @@
         <div id="genreChips" class="chips"></div>
       </fieldset>
 
+      <div class="creator-row">
+        <label class="creator-toggle">
+          <input type="checkbox" id="creatorMode"> 🎬 Creator mode
+          <span class="hint">describe a video scene, get a track and a caption file</span>
+        </label>
+        <label id="lengthField" class="length-field" hidden>Video length
+          <input type="number" id="videoLength" min="3" max="3600" value="30" inputmode="numeric"> seconds
+        </label>
+      </div>
+
       <button type="submit" id="matchBtn">Match my vibe</button>
     </form>
 
@@ -71,6 +81,20 @@
         <button type="button" id="feelBtn" class="pill" aria-pressed="false"
           title="Pulses to the mood's pace: vibration on phones that support it, plus a visual beat">📳 Feel it</button>
       </div>
+      <section id="creatorKit" class="creator-kit" hidden aria-labelledby="creatorKitTitle">
+        <h3 id="creatorKitTitle">🎬 Creator kit</h3>
+        <div class="kit-line">
+          <span class="caption-label">Post description</span>
+          <span id="creditLine" class="caption"></span>
+          <button type="button" id="copyCredit" class="copy-btn">Copy</button>
+        </div>
+        <div class="kit-actions">
+          <button type="button" id="srtBtn" class="pill">⬇ Caption file (.srt)</button>
+          <span class="hint">music caption at the start, “[music fades out]” at the end</span>
+        </div>
+        <p class="hint kit-note">To post with this song, add it from TikTok, Reels or YouTube’s own music picker
+          (search the title) so it’s licensed. The preview here is for choosing, not for uploading.</p>
+      </section>
       <p id="subscribeLine" class="subscribe" hidden>
         Have a subscription? Play the full song in
         <span id="subscribeLinks"></span>

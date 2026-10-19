@@ -239,3 +239,15 @@ audio { width: 100%; margin: 4px 0 8px; }
 .card-dialog h2 { margin: 0 0 10px; font-size: 1.1rem; }
 .card-dialog img { width: 100%; max-height: 65vh; object-fit: contain; border-radius: 10px; display: block; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+/* Creator mode */
+.creator-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 4px 0 12px; }
+.creator-toggle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
+.creator-toggle .hint { font-weight: 400; }
+.length-field { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; }
+.length-field input { width: 5em; padding: 6px 8px; font: inherit; border: 1px solid #ccc; border-radius: 8px; }
+.creator-kit { border: 1px dashed var(--accent); border-radius: 12px; padding: 12px 14px; margin: 4px 0 12px; }
+.creator-kit h3 { margin: 0 0 8px; font-size: 1rem; }
+.kit-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 8px; }
+.kit-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.kit-note { margin: 8px 0 0; }
