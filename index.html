@@ -48,6 +48,13 @@
           <p id="songArtist"></p>
           <p id="songSource" class="source"></p>
         </div>
+        <button type="button" id="saveBtn" class="save-btn" aria-pressed="false" aria-label="Save this song" title="Save this song">♡</button>
+      </div>
+      <p id="songReason" class="reason" hidden></p>
+      <div id="captionRow" class="caption-row" hidden>
+        <span class="caption-label">Music caption</span>
+        <span id="caption" class="caption"></span>
+        <button type="button" id="copyCaption" class="copy-btn">Copy</button>
       </div>
       <div class="player-row">
         <audio id="player" controls hidden></audio>
@@ -58,7 +65,21 @@
         <span id="subscribeLinks"></span>
       </p>
       <p id="status" class="status"></p>
+
+      <div id="queueBox" class="queue" hidden>
+        <h3>Your vibe playlist <span class="hint">plays straight through</span></h3>
+        <ol id="queueList"></ol>
+      </div>
     </section>
+
+    <details id="savedBox" class="drawer" hidden>
+      <summary>Saved songs <span id="savedCount" class="count"></span></summary>
+      <ul id="savedList" class="drawer-list"></ul>
+    </details>
+    <details id="historyBox" class="drawer" hidden>
+      <summary>Recent vibes</summary>
+      <ul id="historyList" class="drawer-list"></ul>
+    </details>
   </main>
 
   <script type="module" src="app.js"></script>

@@ -1,6 +1,7 @@
 import { GENRES, MOODS, detectMood } from './mood.js';
 import { findSong, subscriptionLinks } from './music.js';
 import { moodFromImageFile } from './image.js';
+import { musicCaption, songReason, toggleSaved, isSaved, loadSaved, addHistory, loadHistory } from './vibe.js';
 
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'vibeMatch.genres';
@@ -57,21 +58,78 @@ function describeMood({ mood, matched, confident, photo }) {
   return `${m.emoji} Sounds like you're feeling <strong>${m.label.toLowerCase()}</strong>${because}.${soothe}${genreText}`;
 }
 
-async function playSong(mood) {
+// Each vibe becomes a short playlist: the first song plays as soon as it's
+// found, the rest load in the background and play straight through.
+const PLAYLIST_SIZE = 6;
+const store = (() => { try { return window.localStorage; } catch { return null; } })()
+  || { getItem: () => null, setItem: () => {} };
+
+let queue = [];
+let current = -1;
+let vibeId = 0;          // bumps on every new vibe so stale loads are ignored
+let loading = false;
+let advanceWhenReady = false;
+
+async function nextSong(mood) {
+  const song = await findSong(mood, selectedGenres, played);
+  if (!song) return null;
+  played.add(`${song.title}|${song.artist}`);
+  return { ...song, mood, reason: songReason(mood, song), caption: musicCaption(mood, song) };
+}
+
+async function startVibe(mood) {
+  const id = ++vibeId;
+  queue = [];
+  current = -1;
+  advanceWhenReady = false;
+  renderQueue();
   $('matchBtn').disabled = true;
   $('anotherBtn').disabled = true;
   setStatus('Finding a song…');
 
-  const song = await findSong(mood, selectedGenres, played);
+  const first = await nextSong(mood);
+  if (id !== vibeId) return;
   $('matchBtn').disabled = false;
   $('anotherBtn').disabled = false;
-
-  if (!song) {
+  if (!first) {
     setStatus('I couldn’t reach the free music sources just now. Check your connection and try again.');
     return;
   }
-  played.add(`${song.title}|${song.artist}`);
+  queue.push(first);
+  playAt(0);
+  fillQueue(mood, id);
+}
 
+async function fillQueue(mood, id, target = PLAYLIST_SIZE) {
+  if (loading) return;
+  loading = true;
+  renderQueue();
+  while (id === vibeId && queue.length < target) {
+    const song = await nextSong(mood).catch(() => null);
+    if (id !== vibeId || !song) break;
+    queue.push(song);
+    renderQueue();
+    if (advanceWhenReady) { advanceWhenReady = false; playAt(queue.length - 1); }
+  }
+  loading = false;
+  if (id === vibeId) renderQueue();
+  if (id === vibeId && advanceWhenReady) {
+    advanceWhenReady = false;
+    $('anotherBtn').disabled = false;
+    setStatus('That’s every song I found for this vibe. Try different words for more.');
+  }
+}
+
+function playNext() {
+  if (current + 1 < queue.length) { playAt(current + 1); return; }
+  // Past the end of the list: load one more and play it when it arrives.
+  advanceWhenReady = true;
+  $('anotherBtn').disabled = true;
+  setStatus('Finding another song…');
+  fillQueue(currentMood, vibeId, queue.length + 1);
+}
+
+function showSong(song) {
   $('songCard').hidden = false;
   $('artwork').src = song.artwork || '';
   $('artwork').alt = song.artwork ? `Cover art for ${song.title}` : '';
@@ -79,6 +137,12 @@ async function playSong(mood) {
   $('songTitle').textContent = song.title;
   $('songArtist').textContent = song.artist;
   $('songSource').textContent = `${song.source} · no cost to you`;
+  $('songReason').textContent = song.reason || '';
+  $('songReason').hidden = !song.reason;
+  $('caption').textContent = song.caption || '';
+  $('captionRow').hidden = !song.caption;
+  $('copyCaption').textContent = 'Copy';
+  updateSaveBtn(song);
 
   const links = $('subscribeLinks');
   links.innerHTML = '';
@@ -91,20 +155,149 @@ async function playSong(mood) {
     links.append(a, i < all.length - 2 ? ', ' : i === all.length - 2 ? ' or ' : '.');
   });
   $('subscribeLine').hidden = false;
+}
 
+async function playSong(song) {
+  showSong(song);
   const player = $('player');
   player.hidden = false;
   player.src = song.audioUrl;
   player.onloadedmetadata = () => {
     if (song.startAt && song.startAt < player.duration) player.currentTime = song.startAt;
   };
+  $('anotherBtn').hidden = false;
+  $('anotherBtn').disabled = false;
   try {
     await player.play();
     setStatus('');
   } catch {
     setStatus('Press play to listen.');
   }
-  $('anotherBtn').hidden = false;
+}
+
+function playAt(i) {
+  current = i;
+  renderQueue();
+  playSong(queue[i]);
+}
+
+function renderQueue() {
+  const list = $('queueList');
+  list.innerHTML = '';
+  queue.forEach((song, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'queue-item';
+    if (i === current) btn.setAttribute('aria-current', 'true');
+    const title = document.createElement('span');
+    title.className = 'queue-title';
+    title.textContent = `${song.title} · ${song.artist}`;
+    const reason = document.createElement('span');
+    reason.className = 'queue-reason';
+    reason.textContent = song.reason;
+    btn.append(title, reason);
+    btn.addEventListener('click', () => playAt(i));
+    li.append(btn);
+    list.append(li);
+  });
+  if (loading && queue.length < PLAYLIST_SIZE) {
+    const li = document.createElement('li');
+    li.className = 'queue-loading';
+    li.textContent = 'Finding more…';
+    list.append(li);
+  }
+  $('queueBox').hidden = queue.length < 2 && !loading;
+}
+
+$('player').addEventListener('ended', () => queue.length && playNext());
+$('anotherBtn').addEventListener('click', () => currentMood && playNext());
+
+// Music caption: a subtitle line describing the music, for people who can't
+// hear it. Creators can paste it straight into their captions.
+$('copyCaption').addEventListener('click', async () => {
+  const text = $('caption').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copyCaption').textContent = 'Copied';
+  } catch {
+    // Older browsers: select the text so the person can copy it themselves.
+    const range = document.createRange();
+    range.selectNodeContents($('caption'));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    $('copyCaption').textContent = 'Press Ctrl+C';
+  }
+});
+
+// Saved songs and recent vibes stay in this browser; no account needed.
+function updateSaveBtn(song) {
+  const saved = isSaved(store, song);
+  const btn = $('saveBtn');
+  btn.textContent = saved ? '♥' : '♡';
+  btn.setAttribute('aria-pressed', String(saved));
+  btn.setAttribute('aria-label', saved ? 'Remove from saved songs' : 'Save this song');
+  btn.title = saved ? 'Saved' : 'Save this song';
+}
+
+$('saveBtn').addEventListener('click', () => {
+  const song = queue[current];
+  if (!song) return;
+  toggleSaved(store, song);
+  updateSaveBtn(song);
+  renderSaved();
+});
+
+function renderSaved() {
+  const saved = loadSaved(store);
+  const list = $('savedList');
+  list.innerHTML = '';
+  for (const song of saved) {
+    const li = document.createElement('li');
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'drawer-item';
+    play.textContent = `▶ ${song.title} · ${song.artist}`;
+    play.addEventListener('click', () => {
+      currentMood = song.mood || currentMood;
+      queue = [song];
+      vibeId++;
+      $('result').hidden = false;
+      $('moodLine').textContent = `From your saved songs${song.mood ? ` (${MOODS[song.mood]?.label.toLowerCase()})` : ''}.`;
+      playAt(0);
+    });
+    li.append(play);
+    list.append(li);
+  }
+  $('savedCount').textContent = saved.length ? `(${saved.length})` : '';
+  $('savedBox').hidden = !saved.length;
+}
+
+function renderHistory() {
+  const history = loadHistory(store);
+  const list = $('historyList');
+  list.innerHTML = '';
+  for (const h of history) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'drawer-item';
+    const m = MOODS[h.mood];
+    const what = h.text ? `“${h.text}”` : 'A photo';
+    btn.textContent = `${m ? m.emoji : ''} ${what}`;
+    btn.title = 'Play this vibe again';
+    btn.addEventListener('click', () => {
+      if (h.text) $('feeling').value = h.text;
+      currentMood = h.mood;
+      $('result').hidden = false;
+      $('moodLine').innerHTML = `${m ? m.emoji : ''} Playing your <strong>${m ? m.label.toLowerCase() : ''}</strong> vibe again.`;
+      startVibe(h.mood);
+    });
+    li.append(btn);
+    list.append(li);
+  }
+  $('historyBox').hidden = !history.length;
 }
 
 // A photo's mood counts as a strong signal; typed or spoken words can still
@@ -136,10 +329,10 @@ $('vibeForm').addEventListener('submit', (e) => {
   currentMood = result.mood;
   $('result').hidden = false;
   $('moodLine').innerHTML = describeMood(result);
-  playSong(currentMood);
+  addHistory(store, { text, mood: currentMood, photo: Boolean(photoMood) });
+  renderHistory();
+  startVibe(currentMood);
 });
-
-$('anotherBtn').addEventListener('click', () => currentMood && playSong(currentMood));
 
 // Photo input: analysed in the browser (see image.js), never uploaded.
 $('photoInput').addEventListener('change', async () => {
@@ -233,3 +426,5 @@ function setupVoice() {
 setupVoice();
 
 renderChips();
+renderSaved();
+renderHistory();

@@ -105,6 +105,52 @@ button {
 .song h2 { margin: 0 0 4px; font-size: 1.1rem; }
 .song p { margin: 0; color: var(--muted); }
 .song .source { font-size: 0.8rem; margin-top: 6px; }
+.song-info { flex: 1; min-width: 0; }
+.save-btn {
+  flex-shrink: 0; align-self: flex-start;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1.5px solid var(--border); background: transparent;
+  color: var(--accent); font-size: 1.3rem; line-height: 1; cursor: pointer;
+}
+.save-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--chip); }
+.reason { margin: 0 0 10px; font-size: 0.95rem; }
+
+.caption-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 6px 10px;
+  margin: 0 0 12px; padding: 8px 12px;
+  background: var(--chip); border-radius: 10px;
+}
+.caption-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 100%; }
+.caption { flex: 1; min-width: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9rem; }
+.copy-btn {
+  border: 1.5px solid var(--accent); background: transparent; color: var(--accent);
+  border-radius: 999px; padding: 4px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+
+.queue { margin-top: 18px; }
+.queue h3 { font-size: 1rem; margin: 0 0 8px; }
+.queue ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.queue-item {
+  width: 100%; text-align: left; display: grid; gap: 2px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: transparent; color: var(--text); cursor: pointer;
+}
+.queue-item[aria-current="true"] { border-color: var(--accent); background: var(--chip); }
+.queue-item[aria-current="true"] .queue-title::before { content: '▶ '; color: var(--accent); }
+.queue-title { font-weight: 600; font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-reason { color: var(--muted); font-size: 0.82rem; }
+.queue-loading { color: var(--muted); font-size: 0.85rem; padding: 4px 12px; }
+
+.drawer { margin-top: 16px; border-top: 1px solid var(--border); padding-top: 12px; }
+.drawer summary { cursor: pointer; font-weight: 600; }
+.drawer .count { color: var(--muted); font-weight: 400; }
+.drawer-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 4px; }
+.drawer-item {
+  width: 100%; text-align: left; padding: 6px 4px; border: 0; background: none;
+  color: var(--text); font-size: 0.92rem; cursor: pointer; border-radius: 6px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.drawer-item:hover { background: var(--chip); }
 
 audio { width: 100%; margin: 4px 0 8px; }
 .player-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 4px 0 8px; }
