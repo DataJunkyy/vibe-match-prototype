@@ -1,3 +1,4 @@
+import { inject } from '@vercel/analytics';
 import { GENRES, MOODS, detectMood } from './mood.js';
 import { findSong, findTrack, subscriptionLinks } from './music.js';
 import { moodFromImageFile } from './image.js';
@@ -7,6 +8,9 @@ import {
   detectScene, makeSrt, creditLine,
 } from './vibe.js';
 import { makeVibeCard } from './card.js';
+
+// Initialize Vercel Web Analytics
+inject();
 
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'vibeMatch.genres';
