@@ -41,6 +41,12 @@ npm start            # serves the folder at http://localhost:8000
    get a slow, breathe-along pace.
 9. **Daily check-in**: one tap on how you feel today plays a song and keeps a
    streak of the days you came back.
+10. **🎬 Creator mode** (free): describe a video scene instead of a feeling
+    (*"golden-hour drone shot over the beach"*) and set the video length. Each
+    song then comes with a post description that credits the artist and
+    describes the music, and a caption file (.srt) for YouTube, TikTok, CapCut
+    or Premiere. Add the song itself from the platform's own music picker so
+    it's licensed.
 
 ## Put it online (Vercel, free)
 

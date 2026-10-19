@@ -4,6 +4,7 @@ import { moodFromImageFile } from './image.js';
 import {
   musicCaption, songReason, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
   checkIn, checkedInToday, streak, pulseInterval,
+  detectScene, makeSrt, creditLine,
 } from './vibe.js';
 import { makeVibeCard } from './card.js';
 
@@ -59,6 +60,7 @@ function describeMood({ mood, matched, confident, photo }) {
     : '';
   if (!confident) return `${m.emoji} I couldn't quite read that, so here's something calm.${genreText}`;
   const soothe = mood === 'anxious' ? ' Here’s something to help you breathe.' : '';
+  if (creatorOn()) return `${m.emoji} This scene feels <strong>${m.label.toLowerCase()}</strong>${because}.${genreText}`;
   return `${m.emoji} Sounds like you're feeling <strong>${m.label.toLowerCase()}</strong>${because}.${soothe}${genreText}`;
 }
 
@@ -147,6 +149,7 @@ function showSong(song) {
   $('captionRow').hidden = !song.caption;
   $('copyCaption').textContent = 'Copy';
   updateSaveBtn(song);
+  showCreatorKit(song);
 
   const links = $('subscribeLinks');
   links.innerHTML = '';
@@ -235,6 +238,59 @@ $('copyCaption').addEventListener('click', async () => {
     $('copyCaption').textContent = 'Press Ctrl+C';
   }
 });
+
+// Creator mode: describe a video scene, get a track, a post description that
+// credits the artist and describes the music, and a caption file.
+const CREATOR_KEY = 'vibeSong.creator';
+const creatorOn = () => $('creatorMode').checked;
+const FEELING_HINT = $('feeling').placeholder;
+const SCENE_HINT = 'e.g. Golden-hour drone shot over the beach, slow and peaceful';
+
+function applyCreatorMode() {
+  const on = creatorOn();
+  $('lengthField').hidden = !on;
+  $('feeling').placeholder = on ? SCENE_HINT : FEELING_HINT;
+  $('matchBtn').textContent = on ? 'Match my scene' : 'Match my vibe';
+  try { store.setItem(CREATOR_KEY, on ? '1' : ''); } catch { /* ignore */ }
+  const song = queue[current];
+  if (song) showCreatorKit(song);
+}
+
+function showCreatorKit(song) {
+  $('creatorKit').hidden = !creatorOn();
+  if (!creatorOn()) return;
+  $('creditLine').textContent = creditLine(song);
+  $('copyCredit').textContent = 'Copy';
+}
+
+function copyText(text, btn, el) {
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = 'Copied'; }, () => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    btn.textContent = 'Press Ctrl+C';
+  });
+}
+
+$('creatorMode').addEventListener('change', applyCreatorMode);
+$('copyCredit').addEventListener('click', () => copyText($('creditLine').textContent, $('copyCredit'), $('creditLine')));
+$('srtBtn').addEventListener('click', () => {
+  const song = queue[current];
+  if (!song) return;
+  const seconds = Number($('videoLength').value) || 30;
+  const blob = new Blob([makeSrt(song.caption, seconds)], { type: 'application/x-subrip' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${song.title.normalize('NFD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'music'}-captions.srt`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('creatorMode').checked = Boolean(store.getItem(CREATOR_KEY));
+applyCreatorMode();
 
 // Saved songs and recent vibes stay in this browser; no account needed.
 function updateSaveBtn(song) {
@@ -422,7 +478,8 @@ $('vibeForm').addEventListener('submit', (e) => {
     return;
   }
   $('micHint').hidden = true;
-  const result = combine(text ? detectMood(text) : NO_TEXT);
+  const read = (t) => (creatorOn() ? detectScene(t, detectMood) : detectMood(t));
+  const result = combine(text ? read(text) : NO_TEXT);
   currentMood = result.mood;
   $('result').hidden = false;
   $('moodLine').innerHTML = describeMood(result);

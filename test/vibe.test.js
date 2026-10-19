@@ -87,3 +87,28 @@ test('anxious pulses slowest, angry fastest', async () => {
   assert.ok(pulseInterval('angry') < pulseInterval('energetic'));
   assert.equal(pulseInterval('unknown'), 750);
 });
+
+test('scene words steer creator mode toward the usual mood', async () => {
+  const { detectScene } = await import('../vibe.js');
+  const { detectMood } = await import('../mood.js');
+  assert.equal(detectScene('golden hour drone shot over the beach', detectMood).mood, 'calm');
+  assert.equal(detectScene('basketball highlights montage', detectMood).mood, 'energetic');
+  assert.equal(detectScene('our wedding day', detectMood).mood, 'romantic');
+  assert.equal(detectScene('family throwback slideshow', detectMood).mood, 'nostalgic');
+  assert.equal(detectScene('product launch', detectMood).confident, true);
+});
+
+test('caption file has a start cue and a fade-out cue', async () => {
+  const { makeSrt } = await import('../vibe.js');
+  assert.equal(makeSrt('[bright, bouncy pop vocals]', 30),
+    '1\n00:00:00,000 --> 00:00:04,000\n[bright, bouncy pop vocals]\n\n'
+    + '2\n00:00:28,000 --> 00:00:30,000\n[music fades out]\n');
+  assert.equal(makeSrt('[x]', 5), '1\n00:00:00,000 --> 00:00:04,000\n[x]\n');
+  assert.match(makeSrt('[x]', 125), /00:02:03,000 --> 00:02:05,000/);
+});
+
+test('credit line names the song, artist and sound', async () => {
+  const { creditLine } = await import('../vibe.js');
+  assert.equal(creditLine({ title: 'Ye', artist: 'Burna Boy', caption: '[bright, bouncy Afrobeats rhythm]' }),
+    '🎵 Music: "Ye" by Burna Boy [bright, bouncy Afrobeats rhythm]');
+});

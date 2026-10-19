@@ -158,3 +158,61 @@ export const MOOD_COLORS = {
   energetic: ['#ff5e3a', '#ff2a68'], angry: ['#b31217', '#3d0c0c'], romantic: ['#ff7eb3', '#b24592'],
   nostalgic: ['#c79a6b', '#6b4f3a'], hopeful: ['#7ed957', '#2e9e83'], anxious: ['#8e9eab', '#4a5a73'],
 };
+
+// Creator mode: someone describes a video scene instead of a feeling. Scene
+// words ("sunset", "workout", "wedding") count toward the mood that usually
+// fits them, on top of the normal feeling words.
+const SCENE_WORDS = {
+  calm: ['sunset', 'sunrise', 'beach', 'ocean', 'sea', 'waves', 'rain', 'forest', 'nature', 'mountain',
+    'mountains', 'lake', 'coffee', 'morning', 'reading', 'yoga', 'meditation', 'timelapse', 'drone',
+    'landscape', 'sky', 'clouds', 'snow', 'candle', 'skincare', 'asmr', 'study', 'garden'],
+  energetic: ['sports', 'game', 'highlight', 'highlights', 'skate', 'skateboarding', 'montage', 'action',
+    'race', 'racing', 'car', 'cars', 'nightlife', 'club', 'festival', 'concert', 'transition', 'hiit',
+    'basketball', 'soccer', 'football', 'boxing', 'training', 'fitness'],
+  happy: ['vlog', 'birthday', 'kids', 'puppy', 'dog', 'cat', 'pets', 'picnic', 'summer', 'friends',
+    'vacation', 'holiday', 'food', 'cooking', 'recipe', 'unboxing', 'haul', 'graduation', 'baby'],
+  romantic: ['wedding', 'proposal', 'couple', 'anniversary', 'engagement', 'honeymoon', 'valentine', 'valentines'],
+  nostalgic: ['throwback', 'recap', 'flashback', 'vintage', 'retro', 'family', 'slideshow', 'archive', 'reunion'],
+  hopeful: ['launch', 'transformation', 'journey', 'progress', 'glowup', 'motivational', 'inspiring',
+    'inspirational', 'startup', 'announcement', 'testimonial', 'opening', 'graduates'],
+  sad: ['memorial', 'tribute', 'goodbye', 'farewell', 'funeral', 'remembrance'],
+};
+
+export function detectScene(text, detect) {
+  const base = detect(text);
+  const scores = { ...base.scores };
+  const matched = [...base.matched];
+  for (const token of text.toLowerCase().match(/[a-z]+/g) || []) {
+    for (const [mood, words] of Object.entries(SCENE_WORDS)) {
+      if (words.includes(token)) { scores[mood] += 1; matched.push(token); }
+    }
+  }
+  let best = null;
+  for (const [mood, score] of Object.entries(scores)) {
+    if (score > 0 && (best === null || score > scores[best])) best = mood;
+  }
+  return { mood: best || base.mood, scores, matched, confident: best !== null };
+}
+
+// Caption file for a video of `seconds` length: the music caption when the
+// music starts, and a closing cue as it ends. SRT works in YouTube, TikTok,
+// CapCut, Premiere and most editors.
+function srtTime(sec) {
+  const ms = Math.round(sec * 1000);
+  const pad = (n, w = 2) => String(n).padStart(w, '0');
+  return `${pad(Math.floor(ms / 3600000))}:${pad(Math.floor(ms / 60000) % 60)}:${pad(Math.floor(ms / 1000) % 60)},${pad(ms % 1000, 3)}`;
+}
+
+export function makeSrt(caption, seconds = 30) {
+  const len = Math.max(1, Math.min(Number(seconds) || 30, 3600));
+  const cues = [[0, Math.min(4, len), caption]];
+  if (len >= 8) cues.push([len - 2, len, '[music fades out]']);
+  return cues.map(([a, b, text], i) => `${i + 1}\n${srtTime(a)} --> ${srtTime(b)}\n${text}\n`).join('\n');
+}
+
+// One line for a post description: credits the artist and describes the
+// music for people using a screen reader.
+export function creditLine(song) {
+  const sound = song.caption ? ` ${song.caption}` : '';
+  return `🎵 Music: "${song.title}" by ${song.artist}${sound}`;
+}
