@@ -78,6 +78,21 @@ Vercel. The audio itself still streams straight from the free services.
 - **Already paying for music?** Each result links to the same song in Spotify,
   YouTube Music and Apple Music so you can play the full track there.
 
+- **Every match in more than one sense** (`senses.js`), so people who can't
+  hear the music or can't see the screen get the same vibe:
+  - a caption line in the style deaf viewers know from TV, e.g.
+    *[bright, upbeat music]*, plus a one-line description;
+  - a colour that pulses, sways or "breathes" with the mood while the song
+    plays (it stays still if the device asks for reduced motion);
+  - **🔊 Read aloud** speaks the song and its mood, turning the music down while
+    it talks. Tick *Read each match aloud* to hear every result; it's always on
+    when you used the 🎤;
+  - **📳 Feel the mood** plays a short vibration pattern for the mood, on phones
+    that support it (most Android phones; iPhones don't allow it from a web
+    page).
+  - After each match, focus moves to the result so screen readers announce it,
+    and emoji are hidden from screen readers.
+
 Nothing here costs the listener anything and no API keys are needed.
 
 ## Tests

@@ -36,22 +36,39 @@
         <div id="genreChips" class="chips"></div>
       </fieldset>
 
+      <label class="option" for="autoSpeak">
+        <input type="checkbox" id="autoSpeak">
+        <span>Read each match aloud <span class="hint">(always on when you use the 🎤)</span></span>
+      </label>
+
       <button type="submit" id="matchBtn">Match my vibe</button>
     </form>
 
-    <section id="result" class="result" hidden aria-live="polite">
+    <section id="result" class="result" hidden aria-live="polite" aria-labelledby="resultHeading">
+      <h2 id="resultHeading" class="visually-hidden" tabindex="-1">Your match</h2>
       <p id="moodLine" class="mood-line"></p>
       <div id="songCard" class="song" hidden>
         <img id="artwork" alt="">
         <div class="song-info">
-          <h2 id="songTitle"></h2>
+          <h3 id="songTitle"></h3>
           <p id="songArtist"></p>
           <p id="songSource" class="source"></p>
+        </div>
+      </div>
+      <div id="moodView" class="mood-view" hidden>
+        <div id="moodPulse" class="mood-pulse" aria-hidden="true"></div>
+        <div class="mood-words">
+          <p id="moodCaption" class="mood-caption"></p>
+          <p id="moodDescription" class="mood-description"></p>
         </div>
       </div>
       <div class="player-row">
         <audio id="player" controls hidden></audio>
         <button type="button" id="anotherBtn" class="another" hidden>⏭ Another song</button>
+      </div>
+      <div class="sense-row">
+        <button type="button" id="speakBtn" class="sense-btn" hidden>🔊 Read aloud</button>
+        <button type="button" id="feelBtn" class="sense-btn" hidden>📳 Feel the mood</button>
       </div>
       <p id="subscribeLine" class="subscribe" hidden>
         Have a subscription? Play the full song in
