@@ -310,17 +310,12 @@ function savePass(token) {
 }
 
 function renderPro() {
-  const line = $('proLine');
-  line.innerHTML = '';
-  if (proReady()) {
-    line.textContent = '✨ Creator Pro is on: AI reads your scene and picks the songs.';
-  } else if (proStatus?.ai && proStatus.checkout) {
-    const a = document.createElement('a');
-    a.href = proStatus.checkout;
-    a.textContent = 'Creator Pro, $5/month';
-    line.append('✨ ', a, ': AI reads your scene and picks songs for it.');
-  }
-  line.hidden = !creatorOn() || !line.textContent;
+  const on = proReady();
+  const canBuy = Boolean(proStatus?.ai && proStatus.checkout);
+  $('proCard').hidden = !on && !canBuy;
+  $('proOn').hidden = !on;
+  $('proBtn').hidden = on || !canBuy;
+  if (canBuy) $('proBtn').href = proStatus.checkout;
 }
 $('creatorMode').addEventListener('change', renderPro);
 
