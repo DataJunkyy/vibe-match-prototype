@@ -11,6 +11,12 @@
     <h1>VibeSong</h1>
     <p class="lead">Tell me how you feel, in your own words. Type it, say it with the 🎤, or add a photo. I'll play a song that matches.</p>
 
+    <section id="checkin" class="checkin" aria-labelledby="checkinTitle">
+      <p class="checkin-q"><strong id="checkinTitle">Daily check-in</strong> <span id="checkinText">How are you today? One tap.</span></p>
+      <p id="streak" class="streak" hidden></p>
+      <div id="checkinMoods" class="checkin-moods"></div>
+    </section>
+
     <form id="vibeForm">
       <label for="feeling" class="visually-hidden">How are you feeling?</label>
       <div class="input-wrap">
@@ -60,6 +66,11 @@
         <audio id="player" controls hidden></audio>
         <button type="button" id="anotherBtn" class="another" hidden>⏭ Another song</button>
       </div>
+      <div id="actionRow" class="action-row" hidden>
+        <button type="button" id="shareBtn" class="pill">📤 Share vibe card</button>
+        <button type="button" id="feelBtn" class="pill" aria-pressed="false"
+          title="Pulses to the mood's pace: vibration on phones that support it, plus a visual beat">📳 Feel it</button>
+      </div>
       <p id="subscribeLine" class="subscribe" hidden>
         Have a subscription? Play the full song in
         <span id="subscribeLinks"></span>
@@ -81,6 +92,16 @@
       <ul id="historyList" class="drawer-list"></ul>
     </details>
   </main>
+
+  <dialog id="cardDialog" class="card-dialog" aria-labelledby="cardDialogTitle">
+    <h2 id="cardDialogTitle">Your vibe card</h2>
+    <img id="cardImg" alt="Your vibe card: your mood, the song and its music caption">
+    <div class="card-actions">
+      <button type="button" id="cardShare" class="another" hidden>Share</button>
+      <a id="cardDownload" class="pill" download="my-vibe.png">Download</a>
+      <button type="button" id="cardClose" class="pill">Close</button>
+    </div>
+  </dialog>
 
   <script type="module" src="app.js"></script>
 </body>

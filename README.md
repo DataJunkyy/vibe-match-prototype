@@ -34,6 +34,13 @@ npm start            # serves the folder at http://localhost:8000
    clipboard for your own video captions.
 6. Tap **♡** to save a song. Saved songs and your recent vibes stay in your
    browser (no account) and can be replayed from the bottom of the page.
+7. **📤 Share vibe card** makes a story-sized picture (your photo or the cover,
+   the song and its caption) to post or save. It's drawn in the browser.
+8. **📳 Feel it** pulses at a pace that fits the mood: a vibration on phones
+   that support it, and a pulsing ring on the cover everywhere. Anxious moods
+   get a slow, breathe-along pace.
+9. **Daily check-in**: one tap on how you feel today plays a song and keeps a
+   streak of the days you came back.
 
 ## Put it online (Vercel, free)
 

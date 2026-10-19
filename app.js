@@ -1,7 +1,11 @@
 import { GENRES, MOODS, detectMood } from './mood.js';
 import { findSong, subscriptionLinks } from './music.js';
 import { moodFromImageFile } from './image.js';
-import { musicCaption, songReason, toggleSaved, isSaved, loadSaved, addHistory, loadHistory } from './vibe.js';
+import {
+  musicCaption, songReason, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
+  checkIn, checkedInToday, streak, pulseInterval,
+} from './vibe.js';
+import { makeVibeCard } from './card.js';
 
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'vibeMatch.genres';
@@ -167,6 +171,7 @@ async function playSong(song) {
   };
   $('anotherBtn').hidden = false;
   $('anotherBtn').disabled = false;
+  $('actionRow').hidden = false;
   try {
     await player.play();
     setStatus('');
@@ -272,6 +277,98 @@ function renderSaved() {
   }
   $('savedCount').textContent = saved.length ? `(${saved.length})` : '';
   $('savedBox').hidden = !saved.length;
+}
+
+// Shareable vibe card: built on a canvas in the browser, then shared through
+// the phone's share sheet (Stories, TikTok, WhatsApp...) or downloaded.
+let cardUrl = null;
+let cardFile = null;
+
+$('shareBtn').addEventListener('click', async () => {
+  const song = queue[current];
+  if (!song) return;
+  const mood = song.mood || currentMood;
+  const m = MOODS[mood] || MOODS.calm;
+  $('shareBtn').disabled = true;
+  const photoUrl = photoMood && !$('photoPreview').hidden ? $('photoThumb').src : null;
+  const blob = await makeVibeCard({ mood, label: m.label, emoji: m.emoji, song, photoUrl });
+  $('shareBtn').disabled = false;
+  if (!blob) { setStatus('Couldn’t make the card on this browser.'); return; }
+  if (cardUrl) URL.revokeObjectURL(cardUrl);
+  cardUrl = URL.createObjectURL(blob);
+  cardFile = new File([blob], 'my-vibe.png', { type: 'image/png' });
+  $('cardImg').src = cardUrl;
+  $('cardDownload').href = cardUrl;
+  $('cardShare').hidden = !(navigator.canShare && navigator.canShare({ files: [cardFile] }));
+  $('cardDialog').showModal();
+});
+
+$('cardShare').addEventListener('click', async () => {
+  try {
+    await navigator.share({
+      files: [cardFile],
+      title: 'My vibe',
+      text: 'Find a song for your mood at https://vibesong.vercel.app',
+    });
+  } catch { /* cancelled */ }
+});
+$('cardClose').addEventListener('click', () => $('cardDialog').close());
+
+// Feel it: a pulse at the mood's pace while music plays. Phones that support
+// vibration buzz; every screen sees the cover art beat.
+let feelOn = false;
+let feelTimer = null;
+
+function stopPulse() { clearInterval(feelTimer); feelTimer = null; }
+function startPulse() {
+  stopPulse();
+  if (!feelOn || $('player').paused) return;
+  const mood = queue[current]?.mood || currentMood;
+  feelTimer = setInterval(() => {
+    if (navigator.vibrate) navigator.vibrate(45);
+    const art = $('artwork');
+    art.classList.add('beat');
+    setTimeout(() => art.classList.remove('beat'), 140);
+  }, pulseInterval(mood));
+}
+
+$('feelBtn').addEventListener('click', () => {
+  feelOn = !feelOn;
+  $('feelBtn').setAttribute('aria-pressed', String(feelOn));
+  if (feelOn) startPulse(); else stopPulse();
+});
+$('player').addEventListener('play', startPulse);
+$('player').addEventListener('pause', stopPulse);
+
+// Daily check-in: tap today's mood, keep a streak, get a song for it.
+function renderCheckin() {
+  const box = $('checkinMoods');
+  box.innerHTML = '';
+  const today = checkedInToday(store);
+  for (const [key, m] of Object.entries(MOODS)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mood-btn';
+    b.textContent = `${m.emoji} ${m.label}`;
+    b.setAttribute('aria-pressed', String(today?.mood === key));
+    b.addEventListener('click', () => {
+      checkIn(store, key);
+      renderCheckin();
+      currentMood = key;
+      $('result').hidden = false;
+      $('moodLine').innerHTML = `${m.emoji} Checked in as <strong>${m.label.toLowerCase()}</strong>. Here’s your song for today.`;
+      addHistory(store, { text: `Daily check-in: ${m.label}`, mood: key });
+      renderHistory();
+      startVibe(key);
+    });
+    box.append(b);
+  }
+  const days = streak(store);
+  $('checkinText').textContent = today
+    ? `Today: ${MOODS[today.mood]?.emoji || ''} ${MOODS[today.mood]?.label || ''}. Tap to change.`
+    : 'How are you today? One tap.';
+  $('streak').textContent = days > 1 ? `🔥 ${days}-day streak` : days === 1 ? '🔥 Day 1. Come back tomorrow to start a streak.' : '';
+  $('streak').hidden = !days;
 }
 
 function renderHistory() {
@@ -428,3 +525,4 @@ setupVoice();
 renderChips();
 renderSaved();
 renderHistory();
+renderCheckin();
