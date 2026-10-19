@@ -25,8 +25,15 @@ npm start            # serves the folder at http://localhost:8000
      photo and words together; clear words win over the photo.
 2. Optionally tap the genres you like (Country, Reggae, ...). They're remembered
    in your browser for next time.
-3. Press **Match my vibe**. A song starts playing.
-4. **Another song for this vibe** plays a different one without repeating.
+3. Press **Match my vibe**. A song starts playing, and a playlist of up to six
+   songs builds underneath. Songs play straight through, each with a one-line
+   reason it fits.
+4. **⏭ Another song** skips to the next one without repeating.
+5. Each song has a **music caption** like `[warm, hopeful acoustic guitar]`, a
+   subtitle line for people who can't hear the music. **Copy** puts it on the
+   clipboard for your own video captions.
+6. Tap **♡** to save a song. Saved songs and your recent vibes stay in your
+   browser (no account) and can be replayed from the bottom of the page.
 
 ## Put it online (Vercel, free)
 
@@ -75,6 +82,11 @@ Vercel. The audio itself still streams straight from the free services.
   3. If no pick is found, a keyword search within your genres.
   4. Last resort: a full-length free track from [Audius](https://audius.co),
      started about a third of the way in to skip the intro.
+- **Reasons and music captions** (`vibe.js`): each mood has a few adjective
+  pairs (hopeful: "uplifting, rising", "soaring, warm"...) and each genre a
+  sound ("acoustic guitar", "jazz piano and horns"...). They combine into the
+  reason line and the caption. Saved songs and recent vibes live in
+  `localStorage`.
 - **Already paying for music?** Each result links to the same song in Spotify,
   YouTube Music and Apple Music so you can play the full track there.
 
