@@ -17,6 +17,32 @@
       <div id="checkinMoods" class="checkin-moods"></div>
     </section>
 
+    <section class="creator-card" aria-labelledby="creatorTitle">
+      <div class="creator-head">
+        <h2 id="creatorTitle">🎬 Making a video?</h2>
+        <label class="creator-switch">
+          <input type="checkbox" id="creatorMode"> Creator mode
+        </label>
+      </div>
+      <p class="creator-sub">Describe your scene and get a song that fits it, ready to post.</p>
+      <p class="tier-name">Free</p>
+      <ul class="perks">
+        <li>A song matched to your scene</li>
+        <li>A post description that credits the artist</li>
+        <li>A caption file (.srt) for your video</li>
+      </ul>
+      <div id="proCard" class="pro-card" hidden>
+        <p class="tier-name">✨ Creator Pro <span class="price">$5/month</span></p>
+        <ul class="perks">
+          <li>AI reads your whole scene, not just keywords</li>
+          <li>6 songs picked for your scene, each with why it fits</li>
+          <li>A music caption for every song, for accessible videos</li>
+        </ul>
+        <a id="proBtn" class="pro-btn" hidden>Get Creator Pro</a>
+        <p id="proOn" class="pro-on" hidden>✅ Creator Pro is on. Turn on Creator mode and describe a scene.</p>
+      </div>
+    </section>
+
     <form id="vibeForm">
       <label for="feeling" class="visually-hidden">How are you feeling?</label>
       <div class="input-wrap">
@@ -42,16 +68,9 @@
         <div id="genreChips" class="chips"></div>
       </fieldset>
 
-      <div class="creator-row">
-        <label class="creator-toggle">
-          <input type="checkbox" id="creatorMode"> 🎬 Creator mode
-          <span class="hint">describe a video scene, get a track and a caption file</span>
-        </label>
-        <p id="proLine" class="pro-line" hidden></p>
-        <label id="lengthField" class="length-field" hidden>Video length
-          <input type="number" id="videoLength" min="3" max="3600" value="30" inputmode="numeric"> seconds
-        </label>
-      </div>
+      <label id="lengthField" class="length-field" hidden>Video length
+        <input type="number" id="videoLength" min="3" max="3600" value="30" inputmode="numeric"> seconds
+      </label>
 
       <button type="submit" id="matchBtn">Match my vibe</button>
     </form>

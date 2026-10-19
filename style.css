@@ -241,15 +241,23 @@ audio { width: 100%; margin: 4px 0 8px; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 /* Creator mode */
-.creator-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin: 4px 0 12px; }
-.creator-toggle { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; }
-.creator-toggle .hint { font-weight: 400; }
-.length-field { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; }
+.creator-card { border: 2px solid var(--accent); border-radius: 14px; padding: 14px 16px; margin: 0 0 20px; background: var(--chip); }
+.creator-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.creator-head h2 { margin: 0; font-size: 1.15rem; }
+.creator-switch { display: flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer; padding: 6px 12px; border-radius: 999px; background: var(--card); border: 1px solid var(--accent); }
+.creator-switch input { width: 18px; height: 18px; accent-color: var(--accent); }
+.creator-sub { margin: 8px 0 10px; color: var(--muted); line-height: 1.4; }
+.tier-name { margin: 0 0 4px; font-weight: 700; }
+.price { color: var(--accent); }
+.perks { margin: 0 0 10px; padding-left: 20px; line-height: 1.5; }
+.pro-card { border-top: 1px solid var(--border); padding-top: 10px; }
+.pro-btn { display: inline-block; padding: 10px 18px; border-radius: 999px; background: var(--accent); color: #fff; font-weight: 700; text-decoration: none; }
+.pro-btn:hover { background: var(--accent-hover); }
+.pro-on { margin: 0; font-weight: 600; }
+.length-field { display: flex; align-items: center; gap: 6px; font-size: 0.95rem; margin: 0 0 12px; }
 .length-field input { width: 5em; padding: 6px 8px; font: inherit; border: 1px solid #ccc; border-radius: 8px; }
 .creator-kit { border: 1px dashed var(--accent); border-radius: 12px; padding: 12px 14px; margin: 4px 0 12px; }
 .creator-kit h3 { margin: 0 0 8px; font-size: 1rem; }
 .kit-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 8px; }
 .kit-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .kit-note { margin: 8px 0 0; }
-.pro-line { flex-basis: 100%; order: 3; margin: 0; font-size: 0.95rem; }
-.pro-line a { color: var(--accent); font-weight: 600; }
