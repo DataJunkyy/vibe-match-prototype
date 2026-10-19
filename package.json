@@ -5,5 +5,8 @@
   "scripts": {
     "start": "npx --yes http-server -p 8000 -c-1 .",
     "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }
