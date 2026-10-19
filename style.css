@@ -265,4 +265,7 @@ audio { width: 100%; margin: 4px 0 8px; }
 
 .pro-manage { margin: 10px 0 0; font-size: 0.85rem; }
 .pro-manage a { color: var(--muted); }
-.install-row { margin: 18px 0 0; text-align: center; }
+.install-row { margin: 18px 0 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 16px; text-align: center; }
+.install-qr { margin: 0; display: flex; align-items: center; gap: 10px; }
+.install-qr img { background: #fff; border-radius: 8px; padding: 4px; }
+.install-qr figcaption { max-width: 9em; font-size: 0.85rem; color: var(--muted); text-align: left; }

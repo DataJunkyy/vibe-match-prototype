@@ -144,10 +144,14 @@
       <summary>Recent vibes</summary>
       <ul id="historyList" class="drawer-list"></ul>
     </details>
-    <p id="installRow" class="install-row" hidden>
+    <div id="installRow" class="install-row" hidden>
       <button type="button" id="installBtn" class="pill" hidden>📲 Install VibeSong</button>
       <span id="installHint" class="hint" hidden>Get the app: tap Share, then “Add to Home Screen”.</span>
-    </p>
+      <figure id="installQr" class="install-qr" hidden>
+        <img src="/icons/qr.svg" width="112" height="112" alt="QR code that opens vibesong.vercel.app">
+        <figcaption>Scan to get VibeSong on your phone</figcaption>
+      </figure>
+    </div>
   </main>
 
   <dialog id="cardDialog" class="card-dialog" aria-labelledby="cardDialogTitle">
