@@ -713,9 +713,18 @@ $('installBtn').addEventListener('click', async () => {
   installPrompt.prompt();
   await installPrompt.userChoice;
   installPrompt = null;
-  $('installRow').hidden = true;
+  $('installBtn').hidden = true;
+  if ($('installQr').hidden) $('installRow').hidden = true;
 });
-window.addEventListener('appinstalled', () => { $('installRow').hidden = true; });
+window.addEventListener('appinstalled', () => {
+  $('installBtn').hidden = true;
+  if ($('installQr').hidden) $('installRow').hidden = true;
+});
+// On a computer, a QR code hands the app to the phone in someone's pocket.
+if (matchMedia('(pointer: fine)').matches && !/iphone|ipad|ipod|android/i.test(navigator.userAgent)) {
+  $('installRow').hidden = false;
+  $('installQr').hidden = false;
+}
 if (!installed && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
   $('installRow').hidden = false;
   $('installHint').hidden = false;
