@@ -95,6 +95,11 @@ async function findPick(pick) {
   return hit ? fromItunes(hit, { why: 'hand-picked' }) : null;
 }
 
+// A specific song someone (or the AI) named: its free preview, or null.
+export async function findTrack({ title, artist }) {
+  return findPick({ title, artist }).catch(() => null);
+}
+
 // Keyword search within a genre, e.g. "sunshine reggae".
 async function keywordSearch(mood, genre) {
   const word = shuffle(MOODS[mood].searchWords)[0];

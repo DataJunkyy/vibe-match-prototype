@@ -48,6 +48,23 @@ npm start            # serves the folder at http://localhost:8000
     or Premiere. Add the song itself from the platform's own music picker so
     it's licensed.
 
+## Creator Pro ($5/month, optional)
+
+In creator mode, paying creators get **AI scene matching**: Claude reads the
+scene and names six songs for it, each with its own reason and music caption.
+It stays switched off, and the page looks exactly as before, until these are
+set in Vercel (Project → Settings → Environment Variables):
+
+| Variable | What it is |
+|---|---|
+| `ANTHROPIC_API_KEY` | A Claude API key from console.anthropic.com (set a monthly spend limit there). |
+| `STRIPE_SECRET_KEY` | A Stripe restricted key with read access to Checkout Sessions and Subscriptions. |
+| `STRIPE_PAYMENT_LINK` | The $5/month Payment Link. Its "after payment" redirect must be `https://vibesong.vercel.app/?paid={CHECKOUT_SESSION_ID}`. |
+
+After paying, the browser keeps a signed weekly pass (no account, no
+database); each week it's renewed only while the Stripe subscription is
+active. AI calls use `claude-haiku-5-5` and only run for pass holders.
+
 ## Put it online (Vercel, free)
 
 The app is ready for Vercel's free Hobby plan as is. No settings to change, no
