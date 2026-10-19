@@ -694,3 +694,29 @@ renderChips();
 renderSaved();
 renderHistory();
 renderCheckin();
+
+// Installable app: offline fallback, an Install button where the browser offers one
+// (Android, desktop Chrome), and the Share > Add to Home Screen hint on iPhone and iPad.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  if (installed) return;
+  $('installRow').hidden = false;
+  $('installBtn').hidden = false;
+  $('installHint').hidden = true;
+});
+$('installBtn').addEventListener('click', async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  $('installRow').hidden = true;
+});
+window.addEventListener('appinstalled', () => { $('installRow').hidden = true; });
+if (!installed && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+  $('installRow').hidden = false;
+  $('installHint').hidden = false;
+}
