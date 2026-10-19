@@ -106,3 +106,55 @@ export function addHistory(store, entry, now = Date.now()) {
   list.unshift({ text, mood: entry.mood, photo: Boolean(entry.photo), at: now });
   write(store, HISTORY_KEY, list.slice(0, MAX_HISTORY));
 }
+
+// Daily check-in: one tap a day, with a streak for coming back on consecutive days.
+export const CHECKIN_KEY = 'vibeSong.checkins';
+
+export function dayKey(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+export function loadCheckins(store) { return read(store, CHECKIN_KEY); }
+
+// Records today's mood (replacing an earlier check-in today). Keeps a year.
+export function checkIn(store, mood, date = new Date()) {
+  const today = dayKey(date);
+  const list = loadCheckins(store).filter((c) => c.day !== today);
+  list.unshift({ day: today, mood });
+  write(store, CHECKIN_KEY, list.slice(0, 366));
+}
+
+export function checkedInToday(store, date = new Date()) {
+  const today = dayKey(date);
+  return loadCheckins(store).find((c) => c.day === today) || null;
+}
+
+// Consecutive days ending today (or yesterday, so the streak survives until
+// the person checks in today).
+export function streak(store, date = new Date()) {
+  const days = new Set(loadCheckins(store).map((c) => c.day));
+  const d = new Date(date);
+  if (!days.has(dayKey(d))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (days.has(dayKey(d))) { n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+
+// Feel it: a pulse at a pace that fits the mood, felt as vibration on phones
+// that support it and seen as a pulsing ring everywhere. For anxious moods
+// it is slow enough to breathe along to.
+export const MOOD_PACE = {
+  happy: 116, sad: 70, calm: 64, energetic: 128, angry: 140,
+  romantic: 76, nostalgic: 86, hopeful: 100, anxious: 56,
+};
+export const pulseInterval = (mood) => Math.round(60000 / (MOOD_PACE[mood] || 80));
+
+// Colours for the shareable vibe card.
+export const MOOD_COLORS = {
+  happy: ['#ffb347', '#ff6f91'], sad: ['#3a4a7a', '#1c2240'], calm: ['#4fc3c8', '#2b6c8f'],
+  energetic: ['#ff5e3a', '#ff2a68'], angry: ['#b31217', '#3d0c0c'], romantic: ['#ff7eb3', '#b24592'],
+  nostalgic: ['#c79a6b', '#6b4f3a'], hopeful: ['#7ed957', '#2e9e83'], anxious: ['#8e9eab', '#4a5a73'],
+};

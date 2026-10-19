@@ -60,3 +60,30 @@ test('a broken store does not throw', () => {
   assert.deepEqual(loadSaved(store), []);
   assert.doesNotThrow(() => toggleSaved(store, { title: 'a', artist: 'b' }));
 });
+
+test('streak counts consecutive days and survives until today is done', async () => {
+  const { checkIn, streak, checkedInToday } = await import('../vibe.js');
+  const store = memoryStore();
+  checkIn(store, 'happy', new Date(2026, 9, 16, 9));
+  checkIn(store, 'calm', new Date(2026, 9, 17, 9));
+  checkIn(store, 'hopeful', new Date(2026, 9, 18, 21));
+  assert.equal(streak(store, new Date(2026, 9, 18, 22)), 3);
+  assert.equal(streak(store, new Date(2026, 9, 19, 8)), 3, 'not checked in yet today');
+  assert.equal(checkedInToday(store, new Date(2026, 9, 19, 8)), null);
+  assert.equal(streak(store, new Date(2026, 9, 21, 8)), 0, 'missed a day');
+});
+
+test('checking in twice in one day keeps the latest mood', async () => {
+  const { checkIn, loadCheckins } = await import('../vibe.js');
+  const store = memoryStore();
+  checkIn(store, 'sad', new Date(2026, 9, 19, 8));
+  checkIn(store, 'hopeful', new Date(2026, 9, 19, 20));
+  assert.deepEqual(loadCheckins(store), [{ day: '2026-10-19', mood: 'hopeful' }]);
+});
+
+test('anxious pulses slowest, angry fastest', async () => {
+  const { pulseInterval } = await import('../vibe.js');
+  assert.ok(pulseInterval('anxious') > pulseInterval('calm'));
+  assert.ok(pulseInterval('angry') < pulseInterval('energetic'));
+  assert.equal(pulseInterval('unknown'), 750);
+});
