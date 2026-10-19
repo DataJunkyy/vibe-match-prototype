@@ -122,6 +122,7 @@ button {
 }
 .caption-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); width: 100%; }
 .caption { flex: 1; min-width: 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9rem; }
+#creditLine { white-space: pre-line; }
 .copy-btn {
   border: 1.5px solid var(--accent); background: transparent; color: var(--accent);
   border-radius: 999px; padding: 4px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;

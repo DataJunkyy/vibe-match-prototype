@@ -214,5 +214,5 @@ export function makeSrt(caption, seconds = 30) {
 // music for people using a screen reader.
 export function creditLine(song) {
   const sound = song.caption ? ` ${song.caption}` : '';
-  return `🎵 Music: "${song.title}" by ${song.artist}${sound}`;
+  return `🎵 Music: "${song.title}" by ${song.artist}${sound}\nSong found with vibesong.vercel.app`;
 }
