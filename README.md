@@ -1,6 +1,8 @@
-# Vibe Match
+# VibeSong
 
-Describe how you feel in your own words, and Vibe Match plays a song that fits.
+Live at https://vibesong.vercel.app (formerly Vibe Match).
+
+Describe how you feel in your own words, and VibeSong plays a song that fits.
 
 ## Try it
 
