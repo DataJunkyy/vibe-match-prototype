@@ -49,13 +49,15 @@
           <p id="songSource" class="source"></p>
         </div>
       </div>
-      <audio id="player" controls hidden></audio>
+      <div class="player-row">
+        <audio id="player" controls hidden></audio>
+        <button type="button" id="anotherBtn" class="another" hidden>⏭ Another song</button>
+      </div>
       <p id="subscribeLine" class="subscribe" hidden>
         Have a subscription? Play the full song in
         <span id="subscribeLinks"></span>
       </p>
       <p id="status" class="status"></p>
-      <button type="button" id="anotherBtn" class="secondary" hidden>Another song for this vibe</button>
     </section>
   </main>
 
