@@ -1,5 +1,5 @@
 import { GENRES, MOODS, detectMood } from './mood.js';
-import { findSong, subscriptionLinks } from './music.js';
+import { findSong, findTrack, subscriptionLinks } from './music.js';
 import { moodFromImageFile } from './image.js';
 import {
   musicCaption, songReason, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
@@ -292,6 +292,121 @@ $('srtBtn').addEventListener('click', () => {
 $('creatorMode').checked = Boolean(store.getItem(CREATOR_KEY));
 applyCreatorMode();
 
+// Creator Pro ($5/month): Claude reads the scene and names songs for it.
+// Paying through Stripe returns here with ?paid=<checkout session>, which the
+// server trades for a signed pass kept in this browser.
+const PASS_KEY = 'vibeSong.pass';
+let proStatus = null;
+let pass = store.getItem(PASS_KEY) || '';
+
+function passExpiry(token) {
+  try { return JSON.parse(atob(token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/'))).exp; } catch { return 0; }
+}
+const proReady = () => Boolean(proStatus?.ai && pass);
+
+function savePass(token) {
+  pass = token || '';
+  try { store.setItem(PASS_KEY, pass); } catch { /* ignore */ }
+}
+
+function renderPro() {
+  const line = $('proLine');
+  line.innerHTML = '';
+  if (proReady()) {
+    line.textContent = '✨ Creator Pro is on: AI reads your scene and picks the songs.';
+  } else if (proStatus?.ai && proStatus.checkout) {
+    const a = document.createElement('a');
+    a.href = proStatus.checkout;
+    a.textContent = 'Creator Pro, $5/month';
+    line.append('✨ ', a, ': AI reads your scene and picks songs for it.');
+  }
+  line.hidden = !creatorOn() || !line.textContent;
+}
+$('creatorMode').addEventListener('change', renderPro);
+
+async function getJson(url) {
+  const res = await fetch(url);
+  return res.ok ? res.json() : null;
+}
+
+async function setupPro() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const paid = params.get('paid');
+    if (paid) {
+      history.replaceState(null, '', location.pathname);
+      const r = await getJson(`/api/creator?session_id=${encodeURIComponent(paid)}`);
+      if (r?.pass) {
+        savePass(r.pass);
+        $('creatorMode').checked = true;
+        applyCreatorMode();
+      }
+    } else if (pass && passExpiry(pass) < Date.now()) {
+      const r = await getJson(`/api/creator?pass=${encodeURIComponent(pass)}`);
+      savePass(r?.pass || '');
+    }
+    proStatus = await getJson('/api/creator');
+  } catch {
+    proStatus = null;
+  }
+  renderPro();
+}
+
+// Plays Claude's picks in order; past the end, "Another song" keeps going
+// with the normal mood search.
+async function startAiVibe(scene) {
+  const id = ++vibeId;
+  queue = [];
+  current = -1;
+  advanceWhenReady = false;
+  renderQueue();
+  $('result').hidden = false;
+  $('moodLine').textContent = '';
+  $('matchBtn').disabled = true;
+  setStatus('✨ Reading your scene…');
+  let ai = null;
+  try {
+    const res = await fetch('/api/match', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scene, seconds: Number($('videoLength').value) || 30, pass }),
+    });
+    if (res.status === 402) savePass('');
+    ai = res.ok ? await res.json() : null;
+  } catch { /* fall back below */ }
+  if (id !== vibeId) return;
+  $('matchBtn').disabled = false;
+  renderPro();
+
+  if (!ai) {
+    const result = detectScene(scene, detectMood);
+    currentMood = result.mood;
+    $('moodLine').innerHTML = describeMood(result);
+    addHistory(store, { text: scene, mood: currentMood });
+    renderHistory();
+    startVibe(currentMood);
+    return;
+  }
+  currentMood = ai.mood;
+  $('moodLine').innerHTML = `${MOODS[ai.mood].emoji} ✨ ${escapeHtml(ai.summary || `This scene feels ${MOODS[ai.mood].label.toLowerCase()}.`)}`;
+  addHistory(store, { text: scene, mood: currentMood });
+  renderHistory();
+  loading = true;
+  for (const pick of ai.songs) {
+    const song = await findTrack(pick);
+    if (id !== vibeId) return;
+    if (!song || played.has(`${song.title}|${song.artist}`)) continue;
+    played.add(`${song.title}|${song.artist}`);
+    queue.push({ ...song, mood: ai.mood, reason: pick.why || songReason(ai.mood, song), caption: pick.caption || musicCaption(ai.mood, song) });
+    if (queue.length === 1) playAt(0); else renderQueue();
+  }
+  loading = false;
+  if (!queue.length) { startVibe(currentMood); return; }
+  renderQueue();
+}
+
+setupPro();
+
 // Saved songs and recent vibes stay in this browser; no account needed.
 function updateSaveBtn(song) {
   const saved = isSaved(store, song);
@@ -478,6 +593,7 @@ $('vibeForm').addEventListener('submit', (e) => {
     return;
   }
   $('micHint').hidden = true;
+  if (creatorOn() && text && proReady()) { startAiVibe(text); return; }
   const read = (t) => (creatorOn() ? detectScene(t, detectMood) : detectMood(t));
   const result = combine(text ? read(text) : NO_TEXT);
   currentMood = result.mood;
