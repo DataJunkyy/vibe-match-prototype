@@ -110,5 +110,5 @@ test('caption file has a start cue and a fade-out cue', async () => {
 test('credit line names the song, artist and sound', async () => {
   const { creditLine } = await import('../vibe.js');
   assert.equal(creditLine({ title: 'Ye', artist: 'Burna Boy', caption: '[bright, bouncy Afrobeats rhythm]' }),
-    '🎵 Music: "Ye" by Burna Boy [bright, bouncy Afrobeats rhythm]');
+    '🎵 Music: "Ye" by Burna Boy [bright, bouncy Afrobeats rhythm]\nSong found with vibesong.vercel.app');
 });
