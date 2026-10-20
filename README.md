@@ -25,8 +25,45 @@ npm start            # serves the folder at http://localhost:8000
      photo and words together; clear words win over the photo.
 2. Optionally tap the genres you like (Country, Reggae, ...). They're remembered
    in your browser for next time.
-3. Press **Match my vibe**. A song starts playing.
-4. **Another song for this vibe** plays a different one without repeating.
+3. Press **Match my vibe**. A song starts playing, and a playlist of up to six
+   songs builds underneath. Songs play straight through, each with a one-line
+   reason it fits.
+4. **⏭ Another song** skips to the next one without repeating.
+5. Each song has a **music caption** like `[warm, hopeful acoustic guitar]`, a
+   subtitle line for people who can't hear the music. **Copy** puts it on the
+   clipboard for your own video captions.
+6. Tap **♡** to save a song. Saved songs and your recent vibes stay in your
+   browser (no account) and can be replayed from the bottom of the page.
+7. **📤 Share vibe card** makes a story-sized picture (your photo or the cover,
+   the song and its caption) to post or save. It's drawn in the browser.
+8. **📳 Feel it** pulses at a pace that fits the mood: a vibration on phones
+   that support it, and a pulsing ring on the cover everywhere. Anxious moods
+   get a slow, breathe-along pace.
+9. **Daily check-in**: one tap on how you feel today plays a song and keeps a
+   streak of the days you came back.
+10. **🎬 Creator mode** (free): describe a video scene instead of a feeling
+    (*"golden-hour drone shot over the beach"*) and set the video length. Each
+    song then comes with a post description that credits the artist and
+    describes the music, and a caption file (.srt) for YouTube, TikTok, CapCut
+    or Premiere. Add the song itself from the platform's own music picker so
+    it's licensed.
+
+## Creator Pro ($5/month, optional)
+
+In creator mode, paying creators get **AI scene matching**: Claude reads the
+scene and names six songs for it, each with its own reason and music caption.
+It stays switched off, and the page looks exactly as before, until these are
+set in Vercel (Project → Settings → Environment Variables):
+
+| Variable | What it is |
+|---|---|
+| `ANTHROPIC_API_KEY` | A Claude API key from console.anthropic.com (set a monthly spend limit there). |
+| `STRIPE_SECRET_KEY` | A Stripe restricted key with read access to Checkout Sessions and Subscriptions. |
+| `STRIPE_PAYMENT_LINK` | The $5/month Payment Link. Its "after payment" redirect must be `https://vibesong.vercel.app/?paid={CHECKOUT_SESSION_ID}`. |
+
+After paying, the browser keeps a signed weekly pass (no account, no
+database); each week it's renewed only while the Stripe subscription is
+active. AI calls use `claude-haiku-5-5` and only run for pass holders.
 
 ## Put it online (Vercel, free)
 
@@ -75,23 +112,18 @@ Vercel. The audio itself still streams straight from the free services.
   3. If no pick is found, a keyword search within your genres.
   4. Last resort: a full-length free track from [Audius](https://audius.co),
      started about a third of the way in to skip the intro.
+- **Reasons and music captions** (`vibe.js`): each mood has a few adjective
+  pairs (hopeful: "uplifting, rising", "soaring, warm"...) and each genre a
+  sound ("acoustic guitar", "jazz piano and horns"...). They combine into the
+  reason line and the caption. Saved songs and recent vibes live in
+  `localStorage`.
 - **Already paying for music?** Each result links to the same song in Spotify,
   YouTube Music and Apple Music so you can play the full track there.
-
-- **Every match in more than one sense** (`senses.js`), so people who can't
-  hear the music or can't see the screen get the same vibe:
-  - a caption line in the style deaf viewers know from TV, e.g.
-    *[bright, upbeat music]*, plus a one-line description;
-  - a colour that pulses, sways or "breathes" with the mood while the song
-    plays (it stays still if the device asks for reduced motion);
-  - **🔊 Read aloud** speaks the song and its mood, turning the music down while
-    it talks. Tick *Read each match aloud* to hear every result; it's always on
-    when you used the 🎤;
-  - **📳 Feel the mood** plays a short vibration pattern for the mood, on phones
-    that support it (most Android phones; iPhones don't allow it from a web
-    page).
-  - After each match, focus moves to the result so screen readers announce it,
-    and emoji are hidden from screen readers.
+- **Works without sight** (`app.js`): **🔊 Read aloud** says the song and
+  why it fits, turning the music down while it talks. Tick *Read each match
+  aloud* to hear every song; it's always on when you used the 🎤. After each
+  match, focus moves to the result so screen readers announce it, and emoji
+  are hidden from screen readers.
 
 Nothing here costs the listener anything and no API keys are needed.
 

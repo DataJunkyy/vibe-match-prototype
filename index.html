@@ -4,12 +4,53 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>VibeSong</title>
+  <meta name="description" content="Tell it how you feel or describe your scene, and get a song that matches.">
+  <meta name="theme-color" content="#6c4cf0">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="VibeSong">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <main class="card">
     <h1>VibeSong</h1>
     <p class="lead">Tell me how you feel, in your own words. Type it, say it with the 🎤, or add a photo. I'll play a song that matches.</p>
+
+    <section id="checkin" class="checkin" aria-labelledby="checkinTitle">
+      <p class="checkin-q"><strong id="checkinTitle">Daily check-in</strong> <span id="checkinText">How are you today? One tap.</span></p>
+      <p id="streak" class="streak" hidden></p>
+      <div id="checkinMoods" class="checkin-moods"></div>
+    </section>
+
+    <section class="creator-card" aria-labelledby="creatorTitle">
+      <div class="creator-head">
+        <h2 id="creatorTitle">🎬 Making a video?</h2>
+        <label class="creator-switch">
+          <input type="checkbox" id="creatorMode"> Creator mode
+        </label>
+      </div>
+      <p class="creator-sub">Describe your scene and get a song that fits it, ready to post.</p>
+      <p class="tier-name">Free</p>
+      <ul class="perks">
+        <li>A song matched to your scene</li>
+        <li>A post description that credits the artist</li>
+        <li>A caption file (.srt) for your video</li>
+      </ul>
+      <div id="proCard" class="pro-card" hidden>
+        <p class="tier-name">✨ Creator Pro <span class="price">$5/month</span></p>
+        <ul class="perks">
+          <li>AI reads your whole scene, not just keywords</li>
+          <li>6 songs picked for your scene, each with why it fits</li>
+          <li>A music caption for every song, for accessible videos</li>
+        </ul>
+        <a id="proBtn" class="pro-btn" hidden>Get Creator Pro</a>
+        <p id="proOn" class="pro-on" hidden>✅ Creator Pro is on. Turn on Creator mode and describe a scene.</p>
+        <p class="pro-manage"><a href="https://billing.stripe.com/p/login/8x23cu7oa0SJaIcbuq1ck00" target="_blank" rel="noopener">Manage or cancel your subscription</a></p>
+      </div>
+    </section>
 
     <form id="vibeForm">
       <label for="feeling" class="visually-hidden">How are you feeling?</label>
@@ -36,9 +77,13 @@
         <div id="genreChips" class="chips"></div>
       </fieldset>
 
-      <label class="option" for="autoSpeak">
+      <label id="autoSpeakRow" class="option" for="autoSpeak" hidden>
         <input type="checkbox" id="autoSpeak">
         <span>Read each match aloud <span class="hint">(always on when you use the 🎤)</span></span>
+      </label>
+
+      <label id="lengthField" class="length-field" hidden>Video length
+        <input type="number" id="videoLength" min="3" max="3600" value="30" inputmode="numeric"> seconds
       </label>
 
       <button type="submit" id="matchBtn">Match my vibe</button>
@@ -54,30 +99,80 @@
           <p id="songArtist"></p>
           <p id="songSource" class="source"></p>
         </div>
+        <button type="button" id="saveBtn" class="save-btn" aria-pressed="false" aria-label="Save this song" title="Save this song">♡</button>
       </div>
-      <div id="moodView" class="mood-view" hidden>
-        <div id="moodPulse" class="mood-pulse" aria-hidden="true"></div>
-        <div class="mood-words">
-          <p id="moodCaption" class="mood-caption"></p>
-          <p id="moodDescription" class="mood-description"></p>
-        </div>
+      <p id="songReason" class="reason" hidden></p>
+      <div id="captionRow" class="caption-row" hidden>
+        <span class="caption-label">Music caption</span>
+        <span id="caption" class="caption"></span>
+        <button type="button" id="copyCaption" class="copy-btn">Copy</button>
       </div>
       <div class="player-row">
         <audio id="player" controls hidden></audio>
         <button type="button" id="anotherBtn" class="another" hidden>⏭ Another song</button>
       </div>
-      <div class="sense-row">
-        <button type="button" id="speakBtn" class="sense-btn" hidden>🔊 Read aloud</button>
-        <button type="button" id="feelBtn" class="sense-btn" hidden>📳 Feel the mood</button>
+      <div id="actionRow" class="action-row" hidden>
+        <button type="button" id="shareBtn" class="pill">📤 Share vibe card</button>
+        <button type="button" id="feelBtn" class="pill" aria-pressed="false"
+          title="Pulses to the mood's pace: vibration on phones that support it, plus a visual beat">📳 Feel it</button>
+        <button type="button" id="speakBtn" class="pill" hidden
+          title="Says the song and why it fits, out loud">🔊 Read aloud</button>
       </div>
+      <section id="creatorKit" class="creator-kit" hidden aria-labelledby="creatorKitTitle">
+        <h3 id="creatorKitTitle">🎬 Creator kit</h3>
+        <div class="kit-line">
+          <span class="caption-label">Post description</span>
+          <span id="creditLine" class="caption"></span>
+          <button type="button" id="copyCredit" class="copy-btn">Copy</button>
+        </div>
+        <div class="kit-actions">
+          <button type="button" id="srtBtn" class="pill">⬇ Caption file (.srt)</button>
+          <span class="hint">music caption at the start, “[music fades out]” at the end</span>
+        </div>
+        <p class="hint kit-note">To post with this song, add it from TikTok, Reels or YouTube’s own music picker
+          (search the title) so it’s licensed. The preview here is for choosing, not for uploading.</p>
+      </section>
       <p id="subscribeLine" class="subscribe" hidden>
         Have a subscription? Play the full song in
         <span id="subscribeLinks"></span>
       </p>
       <p id="status" class="status"></p>
+
+      <div id="queueBox" class="queue" hidden>
+        <h3>Your vibe playlist <span class="hint">plays straight through</span></h3>
+        <ol id="queueList"></ol>
+      </div>
     </section>
+
+    <details id="savedBox" class="drawer" hidden>
+      <summary>Saved songs <span id="savedCount" class="count"></span></summary>
+      <ul id="savedList" class="drawer-list"></ul>
+    </details>
+    <details id="historyBox" class="drawer" hidden>
+      <summary>Recent vibes</summary>
+      <ul id="historyList" class="drawer-list"></ul>
+    </details>
+    <div id="installRow" class="install-row" hidden>
+      <button type="button" id="installBtn" class="pill" hidden>📲 Install VibeSong</button>
+      <span id="installHint" class="hint" hidden>Get the app: tap Share, then “Add to Home Screen”.</span>
+      <figure id="installQr" class="install-qr" hidden>
+        <img src="/icons/qr.svg" width="112" height="112" alt="QR code that opens vibesong.vercel.app">
+        <figcaption>Scan to get VibeSong on your phone</figcaption>
+      </figure>
+    </div>
   </main>
 
+  <dialog id="cardDialog" class="card-dialog" aria-labelledby="cardDialogTitle">
+    <h2 id="cardDialogTitle">Your vibe card</h2>
+    <img id="cardImg" alt="Your vibe card: your mood, the song and its music caption">
+    <div class="card-actions">
+      <button type="button" id="cardShare" class="another" hidden>Share</button>
+      <a id="cardDownload" class="pill" download="my-vibe.png">Download</a>
+      <button type="button" id="cardClose" class="pill">Close</button>
+    </div>
+  </dialog>
+
   <script type="module" src="app.js"></script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

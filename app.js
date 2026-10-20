@@ -1,11 +1,15 @@
 import { GENRES, MOODS, detectMood } from './mood.js';
-import { findSong, subscriptionLinks } from './music.js';
+import { findSong, findTrack, subscriptionLinks } from './music.js';
 import { moodFromImageFile } from './image.js';
-import { accessibleOutputs } from './senses.js';
+import {
+  musicCaption, songReason, spokenLine, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
+  checkIn, checkedInToday, streak, pulseInterval,
+  detectScene, makeSrt, creditLine,
+} from './vibe.js';
+import { makeVibeCard } from './card.js';
 
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'vibeMatch.genres';
-const SPEAK_KEY = 'vibeMatch.autoSpeak';
 
 // Genre preferences are kept in this browser only.
 function loadGenres() {
@@ -16,9 +20,8 @@ function saveGenres(genres) {
 }
 
 let selectedGenres = loadGenres();
-let lastInputWasVoice = false;
-let lastOutputs = null;
 let currentMood = null;
+let lastInputWasVoice = false;
 const played = new Set();
 
 function renderChips() {
@@ -61,25 +64,82 @@ function describeMood({ mood, matched, confident, photo }) {
     : '';
   if (!confident) return `${emoji(m)} I couldn't quite read that, so here's something calm.${genreText}`;
   const soothe = mood === 'anxious' ? ' Here’s something to help you breathe.' : '';
+  if (creatorOn()) return `${emoji(m)} This scene feels <strong>${m.label.toLowerCase()}</strong>${because}.${genreText}`;
   return `${emoji(m)} Sounds like you're feeling <strong>${m.label.toLowerCase()}</strong>${because}.${soothe}${genreText}`;
 }
 
-async function playSong(mood) {
+// Each vibe becomes a short playlist: the first song plays as soon as it's
+// found, the rest load in the background and play straight through.
+const PLAYLIST_SIZE = 6;
+const store = (() => { try { return window.localStorage; } catch { return null; } })()
+  || { getItem: () => null, setItem: () => {} };
+
+let queue = [];
+let current = -1;
+let vibeId = 0;          // bumps on every new vibe so stale loads are ignored
+let loading = false;
+let advanceWhenReady = false;
+
+async function nextSong(mood) {
+  const song = await findSong(mood, selectedGenres, played);
+  if (!song) return null;
+  played.add(`${song.title}|${song.artist}`);
+  return { ...song, mood, reason: songReason(mood, song), caption: musicCaption(mood, song) };
+}
+
+async function startVibe(mood) {
+  const id = ++vibeId;
+  queue = [];
+  current = -1;
+  advanceWhenReady = false;
+  renderQueue();
   $('matchBtn').disabled = true;
   $('anotherBtn').disabled = true;
   setStatus('Finding a song…');
 
-  const song = await findSong(mood, selectedGenres, played);
+  const first = await nextSong(mood);
+  if (id !== vibeId) return;
   $('matchBtn').disabled = false;
   $('anotherBtn').disabled = false;
-
-  if (!song) {
-    $('moodView').hidden = true;
+  if (!first) {
     setStatus('I couldn’t reach the free music sources just now. Check your connection and try again.');
     return;
   }
-  played.add(`${song.title}|${song.artist}`);
+  queue.push(first);
+  playAt(0);
+  fillQueue(mood, id);
+}
 
+async function fillQueue(mood, id, target = PLAYLIST_SIZE) {
+  if (loading) return;
+  loading = true;
+  renderQueue();
+  while (id === vibeId && queue.length < target) {
+    const song = await nextSong(mood).catch(() => null);
+    if (id !== vibeId || !song) break;
+    queue.push(song);
+    renderQueue();
+    if (advanceWhenReady) { advanceWhenReady = false; playAt(queue.length - 1); }
+  }
+  loading = false;
+  if (id === vibeId) renderQueue();
+  if (id === vibeId && advanceWhenReady) {
+    advanceWhenReady = false;
+    $('anotherBtn').disabled = false;
+    setStatus('That’s every song I found for this vibe. Try different words for more.');
+  }
+}
+
+function playNext() {
+  if (current + 1 < queue.length) { playAt(current + 1); return; }
+  // Past the end of the list: load one more and play it when it arrives.
+  advanceWhenReady = true;
+  $('anotherBtn').disabled = true;
+  setStatus('Finding another song…');
+  fillQueue(currentMood, vibeId, queue.length + 1);
+}
+
+function showSong(song) {
   $('songCard').hidden = false;
   $('artwork').src = song.artwork || '';
   $('artwork').alt = song.artwork ? `Cover art for ${song.title}` : '';
@@ -87,7 +147,13 @@ async function playSong(mood) {
   $('songTitle').textContent = song.title;
   $('songArtist').textContent = song.artist;
   $('songSource').textContent = `${song.source} · no cost to you`;
-  showSenses(mood, song);
+  $('songReason').textContent = song.reason || '';
+  $('songReason').hidden = !song.reason;
+  $('caption').textContent = song.caption || '';
+  $('captionRow').hidden = !song.caption;
+  $('copyCaption').textContent = 'Copy';
+  updateSaveBtn(song);
+  showCreatorKit(song);
 
   const links = $('subscribeLinks');
   links.innerHTML = '';
@@ -100,36 +166,355 @@ async function playSong(mood) {
     links.append(a, i < all.length - 2 ? ', ' : i === all.length - 2 ? ' or ' : '.');
   });
   $('subscribeLine').hidden = false;
+}
 
+async function playSong(song) {
+  showSong(song);
   const player = $('player');
   player.hidden = false;
   player.src = song.audioUrl;
   player.onloadedmetadata = () => {
     if (song.startAt && song.startAt < player.duration) player.currentTime = song.startAt;
   };
+  $('anotherBtn').hidden = false;
+  $('anotherBtn').disabled = false;
+  $('actionRow').hidden = false;
   try {
     await player.play();
     setStatus('');
   } catch {
     setStatus('Press play to listen.');
   }
-  $('anotherBtn').hidden = false;
-  if (lastInputWasVoice || $('autoSpeak').checked) speak(lastOutputs.spoken);
+  if (lastInputWasVoice || $('autoSpeak').checked) speak(spokenLine(song));
 }
 
-// The same mood for every sense: a caption line and description to read, a
-// colour that moves with the music, speech for people who can't see the
-// screen, and a vibration for people who can't hear it.
-function showSenses(mood, song) {
-  lastOutputs = accessibleOutputs(mood, song);
-  const view = $('moodView');
-  view.style.setProperty('--mood-color', lastOutputs.color);
-  view.style.setProperty('--beat', `${lastOutputs.beat}s`);
-  view.style.setProperty('--motion', lastOutputs.motion);
-  $('moodCaption').textContent = lastOutputs.caption;
-  $('moodDescription').textContent = lastOutputs.description;
-  view.hidden = false;
+function playAt(i) {
+  current = i;
+  renderQueue();
+  playSong(queue[i]);
 }
+
+function renderQueue() {
+  const list = $('queueList');
+  list.innerHTML = '';
+  queue.forEach((song, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'queue-item';
+    if (i === current) btn.setAttribute('aria-current', 'true');
+    const title = document.createElement('span');
+    title.className = 'queue-title';
+    title.textContent = `${song.title} · ${song.artist}`;
+    const reason = document.createElement('span');
+    reason.className = 'queue-reason';
+    reason.textContent = song.reason;
+    btn.append(title, reason);
+    btn.addEventListener('click', () => playAt(i));
+    li.append(btn);
+    list.append(li);
+  });
+  if (loading && queue.length < PLAYLIST_SIZE) {
+    const li = document.createElement('li');
+    li.className = 'queue-loading';
+    li.textContent = 'Finding more…';
+    list.append(li);
+  }
+  $('queueBox').hidden = queue.length < 2 && !loading;
+}
+
+$('player').addEventListener('ended', () => queue.length && playNext());
+$('anotherBtn').addEventListener('click', () => currentMood && playNext());
+
+// Music caption: a subtitle line describing the music, for people who can't
+// hear it. Creators can paste it straight into their captions.
+$('copyCaption').addEventListener('click', async () => {
+  const text = $('caption').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    $('copyCaption').textContent = 'Copied';
+  } catch {
+    // Older browsers: select the text so the person can copy it themselves.
+    const range = document.createRange();
+    range.selectNodeContents($('caption'));
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    $('copyCaption').textContent = 'Press Ctrl+C';
+  }
+});
+
+// Creator mode: describe a video scene, get a track, a post description that
+// credits the artist and describes the music, and a caption file.
+const CREATOR_KEY = 'vibeSong.creator';
+const creatorOn = () => $('creatorMode').checked;
+const FEELING_HINT = $('feeling').placeholder;
+const SCENE_HINT = 'e.g. Golden-hour drone shot over the beach, slow and peaceful';
+
+function applyCreatorMode() {
+  const on = creatorOn();
+  $('lengthField').hidden = !on;
+  $('feeling').placeholder = on ? SCENE_HINT : FEELING_HINT;
+  $('matchBtn').textContent = on ? 'Match my scene' : 'Match my vibe';
+  try { store.setItem(CREATOR_KEY, on ? '1' : ''); } catch { /* ignore */ }
+  const song = queue[current];
+  if (song) showCreatorKit(song);
+}
+
+function showCreatorKit(song) {
+  $('creatorKit').hidden = !creatorOn();
+  if (!creatorOn()) return;
+  $('creditLine').textContent = creditLine(song);
+  $('copyCredit').textContent = 'Copy';
+}
+
+function copyText(text, btn, el) {
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = 'Copied'; }, () => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    btn.textContent = 'Press Ctrl+C';
+  });
+}
+
+$('creatorMode').addEventListener('change', applyCreatorMode);
+$('copyCredit').addEventListener('click', () => copyText($('creditLine').textContent, $('copyCredit'), $('creditLine')));
+$('srtBtn').addEventListener('click', () => {
+  const song = queue[current];
+  if (!song) return;
+  const seconds = Number($('videoLength').value) || 30;
+  const blob = new Blob([makeSrt(song.caption, seconds)], { type: 'application/x-subrip' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${song.title.normalize('NFD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'music'}-captions.srt`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('creatorMode').checked = Boolean(store.getItem(CREATOR_KEY));
+applyCreatorMode();
+
+// Creator Pro ($5/month): Claude reads the scene and names songs for it.
+// Paying through Stripe returns here with ?paid=<checkout session>, which the
+// server trades for a signed pass kept in this browser.
+const PASS_KEY = 'vibeSong.pass';
+let proStatus = null;
+let pass = store.getItem(PASS_KEY) || '';
+
+function passExpiry(token) {
+  try { return JSON.parse(atob(token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/'))).exp; } catch { return 0; }
+}
+const proReady = () => Boolean(proStatus?.ai && pass);
+
+function savePass(token) {
+  pass = token || '';
+  try { store.setItem(PASS_KEY, pass); } catch { /* ignore */ }
+}
+
+function renderPro() {
+  const on = proReady();
+  const canBuy = Boolean(proStatus?.ai && proStatus.checkout);
+  $('proCard').hidden = !on && !canBuy;
+  $('proOn').hidden = !on;
+  $('proBtn').hidden = on || !canBuy;
+  if (canBuy) $('proBtn').href = proStatus.checkout;
+}
+$('creatorMode').addEventListener('change', renderPro);
+
+async function getJson(url) {
+  const res = await fetch(url);
+  return res.ok ? res.json() : null;
+}
+
+async function setupPro() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const paid = params.get('paid');
+    if (paid) {
+      history.replaceState(null, '', location.pathname);
+      const r = await getJson(`/api/creator?session_id=${encodeURIComponent(paid)}`);
+      if (r?.pass) {
+        savePass(r.pass);
+        $('creatorMode').checked = true;
+        applyCreatorMode();
+      }
+    } else if (pass && passExpiry(pass) < Date.now()) {
+      const r = await getJson(`/api/creator?pass=${encodeURIComponent(pass)}`);
+      savePass(r?.pass || '');
+    }
+    proStatus = await getJson('/api/creator');
+  } catch {
+    proStatus = null;
+  }
+  renderPro();
+}
+
+// Plays Claude's picks in order; past the end, "Another song" keeps going
+// with the normal mood search.
+async function startAiVibe(scene) {
+  const id = ++vibeId;
+  queue = [];
+  current = -1;
+  advanceWhenReady = false;
+  renderQueue();
+  $('result').hidden = false;
+  $('moodLine').textContent = '';
+  $('matchBtn').disabled = true;
+  setStatus('✨ Reading your scene…');
+  let ai = null;
+  try {
+    const res = await fetch('/api/match', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ scene, seconds: Number($('videoLength').value) || 30, pass }),
+    });
+    if (res.status === 402) savePass('');
+    ai = res.ok ? await res.json() : null;
+  } catch { /* fall back below */ }
+  if (id !== vibeId) return;
+  $('matchBtn').disabled = false;
+  renderPro();
+
+  if (!ai) {
+    const result = detectScene(scene, detectMood);
+    currentMood = result.mood;
+    $('moodLine').innerHTML = describeMood(result);
+    addHistory(store, { text: scene, mood: currentMood });
+    renderHistory();
+    startVibe(currentMood);
+    return;
+  }
+  currentMood = ai.mood;
+  $('moodLine').innerHTML = `${emoji(MOODS[ai.mood])} ✨ ${escapeHtml(ai.summary || `This scene feels ${MOODS[ai.mood].label.toLowerCase()}.`)}`;
+  addHistory(store, { text: scene, mood: currentMood });
+  renderHistory();
+  loading = true;
+  for (const pick of ai.songs) {
+    const song = await findTrack(pick);
+    if (id !== vibeId) return;
+    if (!song || played.has(`${song.title}|${song.artist}`)) continue;
+    played.add(`${song.title}|${song.artist}`);
+    queue.push({ ...song, mood: ai.mood, reason: pick.why || songReason(ai.mood, song), caption: pick.caption || musicCaption(ai.mood, song) });
+    if (queue.length === 1) playAt(0); else renderQueue();
+  }
+  loading = false;
+  if (!queue.length) { startVibe(currentMood); return; }
+  renderQueue();
+}
+
+setupPro();
+
+// Saved songs and recent vibes stay in this browser; no account needed.
+function updateSaveBtn(song) {
+  const saved = isSaved(store, song);
+  const btn = $('saveBtn');
+  btn.textContent = saved ? '♥' : '♡';
+  btn.setAttribute('aria-pressed', String(saved));
+  btn.setAttribute('aria-label', saved ? 'Remove from saved songs' : 'Save this song');
+  btn.title = saved ? 'Saved' : 'Save this song';
+}
+
+$('saveBtn').addEventListener('click', () => {
+  const song = queue[current];
+  if (!song) return;
+  toggleSaved(store, song);
+  updateSaveBtn(song);
+  renderSaved();
+});
+
+function renderSaved() {
+  const saved = loadSaved(store);
+  const list = $('savedList');
+  list.innerHTML = '';
+  for (const song of saved) {
+    const li = document.createElement('li');
+    const play = document.createElement('button');
+    play.type = 'button';
+    play.className = 'drawer-item';
+    play.textContent = `▶ ${song.title} · ${song.artist}`;
+    play.addEventListener('click', () => {
+      currentMood = song.mood || currentMood;
+      queue = [song];
+      vibeId++;
+      $('result').hidden = false;
+      $('moodLine').textContent = `From your saved songs${song.mood ? ` (${MOODS[song.mood]?.label.toLowerCase()})` : ''}.`;
+      playAt(0);
+    });
+    li.append(play);
+    list.append(li);
+  }
+  $('savedCount').textContent = saved.length ? `(${saved.length})` : '';
+  $('savedBox').hidden = !saved.length;
+}
+
+// Shareable vibe card: built on a canvas in the browser, then shared through
+// the phone's share sheet (Stories, TikTok, WhatsApp...) or downloaded.
+let cardUrl = null;
+let cardFile = null;
+
+$('shareBtn').addEventListener('click', async () => {
+  const song = queue[current];
+  if (!song) return;
+  const mood = song.mood || currentMood;
+  const m = MOODS[mood] || MOODS.calm;
+  $('shareBtn').disabled = true;
+  const photoUrl = photoMood && !$('photoPreview').hidden ? $('photoThumb').src : null;
+  const blob = await makeVibeCard({ mood, label: m.label, emoji: m.emoji, song, photoUrl });
+  $('shareBtn').disabled = false;
+  if (!blob) { setStatus('Couldn’t make the card on this browser.'); return; }
+  if (cardUrl) URL.revokeObjectURL(cardUrl);
+  cardUrl = URL.createObjectURL(blob);
+  cardFile = new File([blob], 'my-vibe.png', { type: 'image/png' });
+  $('cardImg').src = cardUrl;
+  $('cardDownload').href = cardUrl;
+  $('cardShare').hidden = !(navigator.canShare && navigator.canShare({ files: [cardFile] }));
+  $('cardDialog').showModal();
+});
+
+$('cardShare').addEventListener('click', async () => {
+  try {
+    await navigator.share({
+      files: [cardFile],
+      title: 'My vibe',
+      text: 'Find a song for your mood at https://vibesong.vercel.app',
+    });
+  } catch { /* cancelled */ }
+});
+$('cardClose').addEventListener('click', () => $('cardDialog').close());
+
+// Feel it: a pulse at the mood's pace while music plays. Phones that support
+// vibration buzz; every screen sees the cover art beat.
+let feelOn = false;
+let feelTimer = null;
+
+function stopPulse() { clearInterval(feelTimer); feelTimer = null; }
+function startPulse() {
+  stopPulse();
+  if (!feelOn || $('player').paused) return;
+  const mood = queue[current]?.mood || currentMood;
+  feelTimer = setInterval(() => {
+    if (navigator.vibrate) navigator.vibrate(45);
+    const art = $('artwork');
+    art.classList.add('beat');
+    setTimeout(() => art.classList.remove('beat'), 140);
+  }, pulseInterval(mood));
+}
+
+$('feelBtn').addEventListener('click', () => {
+  feelOn = !feelOn;
+  $('feelBtn').setAttribute('aria-pressed', String(feelOn));
+  if (feelOn) startPulse(); else stopPulse();
+});
+$('player').addEventListener('play', startPulse);
+$('player').addEventListener('pause', stopPulse);
+
+// Read aloud: the browser's built-in voice says what's playing and why it
+// fits. It reads every match on its own when the person spoke with the 🎤,
+// or when they ticked "Read each match aloud".
+const SPEAK_KEY = 'vibeSong.autoSpeak';
 
 function speak(text) {
   if (!('speechSynthesis' in window) || !text) return;
@@ -144,26 +529,72 @@ function speak(text) {
   window.speechSynthesis.speak(u);
 }
 
-function setupSenses() {
-  const player = $('player');
-  player.addEventListener('play', () => $('moodView').classList.add('playing'));
-  player.addEventListener('pause', () => $('moodView').classList.remove('playing'));
-  player.addEventListener('ended', () => $('moodView').classList.remove('playing'));
-
-  if ('speechSynthesis' in window) {
-    $('speakBtn').hidden = false;
-    $('speakBtn').addEventListener('click', () => lastOutputs && speak(lastOutputs.spoken));
-  }
-  if ('vibrate' in navigator) {
-    $('feelBtn').hidden = false;
-    $('feelBtn').addEventListener('click', () => lastOutputs && navigator.vibrate(lastOutputs.haptic));
-  }
-
+if ('speechSynthesis' in window) {
+  $('speakBtn').hidden = false;
+  $('speakBtn').addEventListener('click', () => queue[current] && speak(spokenLine(queue[current])));
+  $('autoSpeakRow').hidden = false;
   const auto = $('autoSpeak');
   try { auto.checked = localStorage.getItem(SPEAK_KEY) === '1'; } catch { /* private mode */ }
   auto.addEventListener('change', () => {
     try { localStorage.setItem(SPEAK_KEY, auto.checked ? '1' : '0'); } catch { /* private mode */ }
   });
+}
+
+// Daily check-in: tap today's mood, keep a streak, get a song for it.
+function renderCheckin() {
+  const box = $('checkinMoods');
+  box.innerHTML = '';
+  const today = checkedInToday(store);
+  for (const [key, m] of Object.entries(MOODS)) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'mood-btn';
+    b.textContent = `${m.emoji} ${m.label}`;
+    b.setAttribute('aria-pressed', String(today?.mood === key));
+    b.addEventListener('click', () => {
+      checkIn(store, key);
+      renderCheckin();
+      currentMood = key;
+      $('result').hidden = false;
+      $('moodLine').innerHTML = `${emoji(m)} Checked in as <strong>${m.label.toLowerCase()}</strong>. Here’s your song for today.`;
+      addHistory(store, { text: `Daily check-in: ${m.label}`, mood: key });
+      renderHistory();
+      startVibe(key);
+    });
+    box.append(b);
+  }
+  const days = streak(store);
+  $('checkinText').textContent = today
+    ? `Today: ${MOODS[today.mood]?.emoji || ''} ${MOODS[today.mood]?.label || ''}. Tap to change.`
+    : 'How are you today? One tap.';
+  $('streak').textContent = days > 1 ? `🔥 ${days}-day streak` : days === 1 ? '🔥 Day 1. Come back tomorrow to start a streak.' : '';
+  $('streak').hidden = !days;
+}
+
+function renderHistory() {
+  const history = loadHistory(store);
+  const list = $('historyList');
+  list.innerHTML = '';
+  for (const h of history) {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'drawer-item';
+    const m = MOODS[h.mood];
+    const what = h.text ? `“${h.text}”` : 'A photo';
+    btn.textContent = `${m ? m.emoji : ''} ${what}`;
+    btn.title = 'Play this vibe again';
+    btn.addEventListener('click', () => {
+      if (h.text) $('feeling').value = h.text;
+      currentMood = h.mood;
+      $('result').hidden = false;
+      $('moodLine').innerHTML = `${m ? emoji(m) : ''} Playing your <strong>${m ? m.label.toLowerCase() : ''}</strong> vibe again.`;
+      startVibe(h.mood);
+    });
+    li.append(btn);
+    list.append(li);
+  }
+  $('historyBox').hidden = !history.length;
 }
 
 // A photo's mood counts as a strong signal; typed or spoken words can still
@@ -191,16 +622,19 @@ $('vibeForm').addEventListener('submit', (e) => {
     return;
   }
   $('micHint').hidden = true;
-  const result = combine(text ? detectMood(text) : NO_TEXT);
+  $('result').hidden = false;
+  // Take keyboard and screen-reader users straight to the answer.
+  $('resultHeading').focus();
+  if (creatorOn() && text && proReady()) { startAiVibe(text); return; }
+  const read = (t) => (creatorOn() ? detectScene(t, detectMood) : detectMood(t));
+  const result = combine(text ? read(text) : NO_TEXT);
   currentMood = result.mood;
   $('result').hidden = false;
   $('moodLine').innerHTML = describeMood(result);
-  // Take keyboard and screen-reader users straight to the answer.
-  $('resultHeading').focus();
-  playSong(currentMood);
+  addHistory(store, { text, mood: currentMood, photo: Boolean(photoMood) });
+  renderHistory();
+  startVibe(currentMood);
 });
-
-$('anotherBtn').addEventListener('click', () => currentMood && playSong(currentMood));
 
 // Photo input: analysed in the browser (see image.js), never uploaded.
 $('photoInput').addEventListener('change', async () => {
@@ -293,6 +727,43 @@ function setupVoice() {
 }
 
 setupVoice();
-setupSenses();
 
 renderChips();
+renderSaved();
+renderHistory();
+renderCheckin();
+
+// Installable app: offline fallback, an Install button where the browser offers one
+// (Android, desktop Chrome), and the Share > Add to Home Screen hint on iPhone and iPad.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+const installed = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let installPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installPrompt = e;
+  if (installed) return;
+  $('installRow').hidden = false;
+  $('installBtn').hidden = false;
+  $('installHint').hidden = true;
+});
+$('installBtn').addEventListener('click', async () => {
+  if (!installPrompt) return;
+  installPrompt.prompt();
+  await installPrompt.userChoice;
+  installPrompt = null;
+  $('installBtn').hidden = true;
+  if ($('installQr').hidden) $('installRow').hidden = true;
+});
+window.addEventListener('appinstalled', () => {
+  $('installBtn').hidden = true;
+  if ($('installQr').hidden) $('installRow').hidden = true;
+});
+// On a computer, a QR code hands the app to the phone in someone's pocket.
+if (matchMedia('(pointer: fine)').matches && !/iphone|ipad|ipod|android/i.test(navigator.userAgent)) {
+  $('installRow').hidden = false;
+  $('installQr').hidden = false;
+}
+if (!installed && /iphone|ipad|ipod/i.test(navigator.userAgent)) {
+  $('installRow').hidden = false;
+  $('installHint').hidden = false;
+}

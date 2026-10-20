@@ -1,0 +1,121 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  musicCaption, songReason, spokenLine, soundOf, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
+} from '../vibe.js';
+
+function memoryStore() {
+  const data = new Map();
+  return { getItem: (k) => data.get(k) ?? null, setItem: (k, v) => data.set(k, String(v)) };
+}
+
+test('caption names the mood and the genre sound', () => {
+  assert.equal(musicCaption('hopeful', { genre: 'Country' }), '[uplifting, rising acoustic guitar]');
+  assert.equal(musicCaption('anxious', { genre: 'Jazz' }), '[soothing, steady jazz piano and horns]');
+});
+
+test('unknown genre falls back to "music"', () => {
+  assert.equal(soundOf('Spoken Word'), 'music');
+  assert.equal(musicCaption('sad', {}), '[soft, aching music]');
+});
+
+test('reason reads as a sentence', () => {
+  assert.equal(songReason('calm', { genre: 'Classical' }), 'Gentle and unhurried strings, to help you slow down.');
+  assert.equal(songReason('happy', {}), 'Bright and bouncy, to match your happy mood.');
+});
+
+test('songs in one playlist get varied wording, the same song always the same', () => {
+  const titles = ['Alright', 'Fight Song', 'Ye', 'Color Esperanza', 'The House That Built Me', 'Rise Up'];
+  const captions = new Set(titles.map((title) => musicCaption('hopeful', { title, genre: 'Pop' })));
+  assert.ok(captions.size > 1);
+  assert.equal(musicCaption('hopeful', { title: 'Ye' }), musicCaption('hopeful', { title: 'Ye' }));
+});
+
+test('unknown mood uses calm wording', () => {
+  assert.equal(musicCaption('confused', { genre: 'Pop' }), '[gentle, unhurried pop vocals]');
+});
+
+test('saving toggles a song on and off', () => {
+  const store = memoryStore();
+  const song = { title: 'Here Comes the Sun', artist: 'The Beatles', genre: 'Rock', mood: 'happy' };
+  assert.equal(toggleSaved(store, song), true);
+  assert.equal(isSaved(store, song), true);
+  assert.equal(loadSaved(store)[0].title, 'Here Comes the Sun');
+  assert.equal(toggleSaved(store, song), false);
+  assert.equal(isSaved(store, song), false);
+});
+
+test('history keeps newest first and drops repeats', () => {
+  const store = memoryStore();
+  addHistory(store, { text: 'tired but proud', mood: 'calm' }, 1);
+  addHistory(store, { text: 'so happy today', mood: 'happy' }, 2);
+  addHistory(store, { text: 'tired but proud', mood: 'calm' }, 3);
+  const h = loadHistory(store);
+  assert.deepEqual(h.map((e) => e.text), ['tired but proud', 'so happy today']);
+  assert.equal(h[0].at, 3);
+});
+
+test('a broken store does not throw', () => {
+  const store = { getItem: () => '{not json', setItem: () => { throw new Error('full'); } };
+  assert.deepEqual(loadSaved(store), []);
+  assert.doesNotThrow(() => toggleSaved(store, { title: 'a', artist: 'b' }));
+});
+
+test('streak counts consecutive days and survives until today is done', async () => {
+  const { checkIn, streak, checkedInToday } = await import('../vibe.js');
+  const store = memoryStore();
+  checkIn(store, 'happy', new Date(2026, 9, 16, 9));
+  checkIn(store, 'calm', new Date(2026, 9, 17, 9));
+  checkIn(store, 'hopeful', new Date(2026, 9, 18, 21));
+  assert.equal(streak(store, new Date(2026, 9, 18, 22)), 3);
+  assert.equal(streak(store, new Date(2026, 9, 19, 8)), 3, 'not checked in yet today');
+  assert.equal(checkedInToday(store, new Date(2026, 9, 19, 8)), null);
+  assert.equal(streak(store, new Date(2026, 9, 21, 8)), 0, 'missed a day');
+});
+
+test('checking in twice in one day keeps the latest mood', async () => {
+  const { checkIn, loadCheckins } = await import('../vibe.js');
+  const store = memoryStore();
+  checkIn(store, 'sad', new Date(2026, 9, 19, 8));
+  checkIn(store, 'hopeful', new Date(2026, 9, 19, 20));
+  assert.deepEqual(loadCheckins(store), [{ day: '2026-10-19', mood: 'hopeful' }]);
+});
+
+test('anxious pulses slowest, angry fastest', async () => {
+  const { pulseInterval } = await import('../vibe.js');
+  assert.ok(pulseInterval('anxious') > pulseInterval('calm'));
+  assert.ok(pulseInterval('angry') < pulseInterval('energetic'));
+  assert.equal(pulseInterval('unknown'), 750);
+});
+
+test('scene words steer creator mode toward the usual mood', async () => {
+  const { detectScene } = await import('../vibe.js');
+  const { detectMood } = await import('../mood.js');
+  assert.equal(detectScene('golden hour drone shot over the beach', detectMood).mood, 'calm');
+  assert.equal(detectScene('basketball highlights montage', detectMood).mood, 'energetic');
+  assert.equal(detectScene('our wedding day', detectMood).mood, 'romantic');
+  assert.equal(detectScene('family throwback slideshow', detectMood).mood, 'nostalgic');
+  assert.equal(detectScene('product launch', detectMood).confident, true);
+});
+
+test('caption file has a start cue and a fade-out cue', async () => {
+  const { makeSrt } = await import('../vibe.js');
+  assert.equal(makeSrt('[bright, bouncy pop vocals]', 30),
+    '1\n00:00:00,000 --> 00:00:04,000\n[bright, bouncy pop vocals]\n\n'
+    + '2\n00:00:28,000 --> 00:00:30,000\n[music fades out]\n');
+  assert.equal(makeSrt('[x]', 5), '1\n00:00:00,000 --> 00:00:04,000\n[x]\n');
+  assert.match(makeSrt('[x]', 125), /00:02:03,000 --> 00:02:05,000/);
+});
+
+test('credit line names the song, artist and sound', async () => {
+  const { creditLine } = await import('../vibe.js');
+  assert.equal(creditLine({ title: 'Ye', artist: 'Burna Boy', caption: '[bright, bouncy Afrobeats rhythm]' }),
+    '🎵 Music: "Ye" by Burna Boy [bright, bouncy Afrobeats rhythm]\nSong found with vibesong.vercel.app');
+});
+
+test('Read aloud names the song and says why it fits', () => {
+  const song = { title: 'Here Comes the Sun', artist: 'The Beatles', reason: 'Bright and bouncy pop vocals, to match your happy mood.' };
+  assert.equal(spokenLine(song), 'Now playing Here Comes the Sun by The Beatles. Bright and bouncy pop vocals, to match your happy mood.');
+  assert.equal(spokenLine({ title: 'Song' }), 'Now playing Song.');
+  assert.equal(spokenLine({}), '');
+});
