@@ -2,7 +2,7 @@ import { GENRES, MOODS, detectMood } from './mood.js';
 import { findSong, findTrack, subscriptionLinks } from './music.js';
 import { moodFromImageFile } from './image.js';
 import {
-  musicCaption, songReason, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
+  musicCaption, songReason, spokenLine, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
   checkIn, checkedInToday, streak, pulseInterval,
   detectScene, makeSrt, creditLine,
 } from './vibe.js';
@@ -21,6 +21,7 @@ function saveGenres(genres) {
 
 let selectedGenres = loadGenres();
 let currentMood = null;
+let lastInputWasVoice = false;
 const played = new Set();
 
 function renderChips() {
@@ -47,21 +48,24 @@ const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
 function setStatus(text) { $('status').textContent = text; }
 
+// Emoji are decoration; screen readers skip them and read the words instead.
+const emoji = (m) => `<span aria-hidden="true">${m.emoji}</span>`;
+
 function describeMood({ mood, matched, confident, photo }) {
   const m = MOODS[mood];
   if (photo && !matched.length) {
     const why = photo.reasons.length ? ` (${photo.reasons.slice(0, 3).join(', ')})` : '';
     const genres = selectedGenres.length ? ` Looking in ${selectedGenres.map((g) => GENRES[g].label).join(', ')}.` : '';
-    return `${m.emoji} Your photo feels <strong>${m.label.toLowerCase()}</strong>${why}.${genres}`;
+    return `${emoji(m)} Your photo feels <strong>${m.label.toLowerCase()}</strong>${why}.${genres}`;
   }
   const because = matched.length ? ` (I picked up on: ${[...new Set(matched)].slice(0, 4).map(escapeHtml).join(', ')})` : '';
   const genreText = selectedGenres.length
     ? ` Looking in ${selectedGenres.map((g) => GENRES[g].label).join(', ')}.`
     : '';
-  if (!confident) return `${m.emoji} I couldn't quite read that, so here's something calm.${genreText}`;
+  if (!confident) return `${emoji(m)} I couldn't quite read that, so here's something calm.${genreText}`;
   const soothe = mood === 'anxious' ? ' Here’s something to help you breathe.' : '';
-  if (creatorOn()) return `${m.emoji} This scene feels <strong>${m.label.toLowerCase()}</strong>${because}.${genreText}`;
-  return `${m.emoji} Sounds like you're feeling <strong>${m.label.toLowerCase()}</strong>${because}.${soothe}${genreText}`;
+  if (creatorOn()) return `${emoji(m)} This scene feels <strong>${m.label.toLowerCase()}</strong>${because}.${genreText}`;
+  return `${emoji(m)} Sounds like you're feeling <strong>${m.label.toLowerCase()}</strong>${because}.${soothe}${genreText}`;
 }
 
 // Each vibe becomes a short playlist: the first song plays as soon as it's
@@ -181,6 +185,7 @@ async function playSong(song) {
   } catch {
     setStatus('Press play to listen.');
   }
+  if (lastInputWasVoice || $('autoSpeak').checked) speak(spokenLine(song));
 }
 
 function playAt(i) {
@@ -383,7 +388,7 @@ async function startAiVibe(scene) {
     return;
   }
   currentMood = ai.mood;
-  $('moodLine').innerHTML = `${MOODS[ai.mood].emoji} ✨ ${escapeHtml(ai.summary || `This scene feels ${MOODS[ai.mood].label.toLowerCase()}.`)}`;
+  $('moodLine').innerHTML = `${emoji(MOODS[ai.mood])} ✨ ${escapeHtml(ai.summary || `This scene feels ${MOODS[ai.mood].label.toLowerCase()}.`)}`;
   addHistory(store, { text: scene, mood: currentMood });
   renderHistory();
   loading = true;
@@ -506,6 +511,35 @@ $('feelBtn').addEventListener('click', () => {
 $('player').addEventListener('play', startPulse);
 $('player').addEventListener('pause', stopPulse);
 
+// Read aloud: the browser's built-in voice says what's playing and why it
+// fits. It reads every match on its own when the person spoke with the 🎤,
+// or when they ticked "Read each match aloud".
+const SPEAK_KEY = 'vibeSong.autoSpeak';
+
+function speak(text) {
+  if (!('speechSynthesis' in window) || !text) return;
+  const player = $('player');
+  const volume = player.volume;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = navigator.language || 'en-US';
+  // Turn the music down while talking over it.
+  u.onstart = () => { player.volume = Math.min(volume, 0.25); };
+  u.onend = u.onerror = () => { player.volume = volume; };
+  window.speechSynthesis.speak(u);
+}
+
+if ('speechSynthesis' in window) {
+  $('speakBtn').hidden = false;
+  $('speakBtn').addEventListener('click', () => queue[current] && speak(spokenLine(queue[current])));
+  $('autoSpeakRow').hidden = false;
+  const auto = $('autoSpeak');
+  try { auto.checked = localStorage.getItem(SPEAK_KEY) === '1'; } catch { /* private mode */ }
+  auto.addEventListener('change', () => {
+    try { localStorage.setItem(SPEAK_KEY, auto.checked ? '1' : '0'); } catch { /* private mode */ }
+  });
+}
+
 // Daily check-in: tap today's mood, keep a streak, get a song for it.
 function renderCheckin() {
   const box = $('checkinMoods');
@@ -522,7 +556,7 @@ function renderCheckin() {
       renderCheckin();
       currentMood = key;
       $('result').hidden = false;
-      $('moodLine').innerHTML = `${m.emoji} Checked in as <strong>${m.label.toLowerCase()}</strong>. Here’s your song for today.`;
+      $('moodLine').innerHTML = `${emoji(m)} Checked in as <strong>${m.label.toLowerCase()}</strong>. Here’s your song for today.`;
       addHistory(store, { text: `Daily check-in: ${m.label}`, mood: key });
       renderHistory();
       startVibe(key);
@@ -554,7 +588,7 @@ function renderHistory() {
       if (h.text) $('feeling').value = h.text;
       currentMood = h.mood;
       $('result').hidden = false;
-      $('moodLine').innerHTML = `${m ? m.emoji : ''} Playing your <strong>${m ? m.label.toLowerCase() : ''}</strong> vibe again.`;
+      $('moodLine').innerHTML = `${m ? emoji(m) : ''} Playing your <strong>${m ? m.label.toLowerCase() : ''}</strong> vibe again.`;
       startVibe(h.mood);
     });
     li.append(btn);
@@ -588,6 +622,9 @@ $('vibeForm').addEventListener('submit', (e) => {
     return;
   }
   $('micHint').hidden = true;
+  $('result').hidden = false;
+  // Take keyboard and screen-reader users straight to the answer.
+  $('resultHeading').focus();
   if (creatorOn() && text && proReady()) { startAiVibe(text); return; }
   const read = (t) => (creatorOn() ? detectScene(t, detectMood) : detectMood(t));
   const result = combine(text ? read(text) : NO_TEXT);
@@ -676,6 +713,7 @@ function setupVoice() {
       // Spoke something? Match it straight away, like pressing the button.
       if (finalText.trim()) {
         box.value = finalText.trim();
+        lastInputWasVoice = true;
         $('vibeForm').requestSubmit();
       }
     };
@@ -685,7 +723,7 @@ function setupVoice() {
     rec.start();
   });
 
-  box.addEventListener('input', () => showHint(''));
+  box.addEventListener('input', () => { showHint(''); lastInputWasVoice = false; });
 }
 
 setupVoice();

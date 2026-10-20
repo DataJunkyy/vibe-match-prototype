@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  musicCaption, songReason, soundOf, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
+  musicCaption, songReason, spokenLine, soundOf, toggleSaved, isSaved, loadSaved, addHistory, loadHistory,
 } from '../vibe.js';
 
 function memoryStore() {
@@ -111,4 +111,11 @@ test('credit line names the song, artist and sound', async () => {
   const { creditLine } = await import('../vibe.js');
   assert.equal(creditLine({ title: 'Ye', artist: 'Burna Boy', caption: '[bright, bouncy Afrobeats rhythm]' }),
     '🎵 Music: "Ye" by Burna Boy [bright, bouncy Afrobeats rhythm]\nSong found with vibesong.vercel.app');
+});
+
+test('Read aloud names the song and says why it fits', () => {
+  const song = { title: 'Here Comes the Sun', artist: 'The Beatles', reason: 'Bright and bouncy pop vocals, to match your happy mood.' };
+  assert.equal(spokenLine(song), 'Now playing Here Comes the Sun by The Beatles. Bright and bouncy pop vocals, to match your happy mood.');
+  assert.equal(spokenLine({ title: 'Song' }), 'Now playing Song.');
+  assert.equal(spokenLine({}), '');
 });

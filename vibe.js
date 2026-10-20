@@ -51,6 +51,14 @@ export function musicCaption(mood, song = {}) {
   return `[${a}, ${b} ${soundOf(song.genre)}]`;
 }
 
+// What Read aloud says: the song, then why it fits, for people who can't see
+// the screen.
+export function spokenLine(song = {}) {
+  if (!song.title) return '';
+  const who = song.artist ? `${song.title} by ${song.artist}` : song.title;
+  return song.reason ? `Now playing ${who}. ${song.reason}` : `Now playing ${who}.`;
+}
+
 export function songReason(mood, song = {}) {
   const m = MOOD_SOUND[mood] || MOOD_SOUND.calm;
   const [a, b] = wordsFor(mood, song);

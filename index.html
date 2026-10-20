@@ -77,6 +77,11 @@
         <div id="genreChips" class="chips"></div>
       </fieldset>
 
+      <label id="autoSpeakRow" class="option" for="autoSpeak" hidden>
+        <input type="checkbox" id="autoSpeak">
+        <span>Read each match aloud <span class="hint">(always on when you use the 🎤)</span></span>
+      </label>
+
       <label id="lengthField" class="length-field" hidden>Video length
         <input type="number" id="videoLength" min="3" max="3600" value="30" inputmode="numeric"> seconds
       </label>
@@ -84,12 +89,13 @@
       <button type="submit" id="matchBtn">Match my vibe</button>
     </form>
 
-    <section id="result" class="result" hidden aria-live="polite">
+    <section id="result" class="result" hidden aria-live="polite" aria-labelledby="resultHeading">
+      <h2 id="resultHeading" class="visually-hidden" tabindex="-1">Your match</h2>
       <p id="moodLine" class="mood-line"></p>
       <div id="songCard" class="song" hidden>
         <img id="artwork" alt="">
         <div class="song-info">
-          <h2 id="songTitle"></h2>
+          <h3 id="songTitle"></h3>
           <p id="songArtist"></p>
           <p id="songSource" class="source"></p>
         </div>
@@ -109,6 +115,8 @@
         <button type="button" id="shareBtn" class="pill">📤 Share vibe card</button>
         <button type="button" id="feelBtn" class="pill" aria-pressed="false"
           title="Pulses to the mood's pace: vibration on phones that support it, plus a visual beat">📳 Feel it</button>
+        <button type="button" id="speakBtn" class="pill" hidden
+          title="Says the song and why it fits, out loud">🔊 Read aloud</button>
       </div>
       <section id="creatorKit" class="creator-kit" hidden aria-labelledby="creatorKitTitle">
         <h3 id="creatorKitTitle">🎬 Creator kit</h3>

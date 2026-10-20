@@ -102,7 +102,7 @@ button {
 
 .song { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
 .song img { width: 88px; height: 88px; border-radius: 10px; object-fit: cover; background: var(--chip); flex-shrink: 0; }
-.song h2 { margin: 0 0 4px; font-size: 1.1rem; }
+.song h3 { margin: 0 0 4px; font-size: 1.1rem; }
 .song p { margin: 0; color: var(--muted); }
 .song .source { font-size: 0.8rem; margin-top: 6px; }
 .song-info { flex: 1; min-width: 0; }
@@ -269,6 +269,10 @@ audio { width: 100%; margin: 4px 0 8px; }
 .install-qr { margin: 0; display: flex; align-items: center; gap: 10px; }
 .install-qr img { background: #fff; border-radius: 8px; padding: 4px; }
 .install-qr figcaption { max-width: 9em; font-size: 0.85rem; color: var(--muted); text-align: left; }
+
+.option { display: flex; align-items: center; gap: 8px; margin: 4px 0 12px; font-size: 0.95rem; cursor: pointer; }
+.option input { width: 18px; height: 18px; accent-color: var(--accent); }
+#resultHeading:focus { outline: none; }
 
 /* Always-visible feedback button; extra bottom padding keeps it off the last row of content. */
 body { padding-bottom: 88px; }

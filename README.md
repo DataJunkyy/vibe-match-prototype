@@ -119,6 +119,11 @@ Vercel. The audio itself still streams straight from the free services.
   `localStorage`.
 - **Already paying for music?** Each result links to the same song in Spotify,
   YouTube Music and Apple Music so you can play the full track there.
+- **Works without sight** (`app.js`): **🔊 Read aloud** says the song and
+  why it fits, turning the music down while it talks. Tick *Read each match
+  aloud* to hear every song; it's always on when you used the 🎤. After each
+  match, focus moves to the result so screen readers announce it, and emoji
+  are hidden from screen readers.
 
 Nothing here costs the listener anything and no API keys are needed.
 
